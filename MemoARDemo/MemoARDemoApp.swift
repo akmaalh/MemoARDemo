@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct MemoARDemoApp: App {
+    @StateObject private var dataManager = GameDataManager()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeScreen()
+                .environmentObject(dataManager)
         }
     }
 }
