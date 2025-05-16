@@ -13,9 +13,10 @@ struct GameRecord: Codable, Identifiable {
     var date: Date
     var userName: String
     var score: Int
+    var theme: String
     
-    static func createNew(userName: String, score: Int) -> GameRecord {
-        return GameRecord(date: Date(), userName: userName, score: score)
+    static func createNew(userName: String, score: Int, theme: String) -> GameRecord {
+        return GameRecord(date: Date(), userName: userName, score: score, theme: theme)
     }
 }
 
@@ -23,9 +24,12 @@ struct GameRecord: Codable, Identifiable {
 class GameDataManager: ObservableObject {
     @Published var currentUser: User?
     @Published var gameHistory: [GameRecord] = []
+    @Published var currentTheme: String = "Kitchen"
     
     private let userDefaultsKey = "gameUser"
     private let historyDefaultsKey = "gameHistory"
+    
+    let availableThemes = ["Kitchen", "Garage", "Bathroom"]
     
     init() {
         loadUser()
@@ -53,8 +57,8 @@ class GameDataManager: ObservableObject {
     func saveGameResult(score: Int) {
         guard let userName = currentUser?.name else { return }
         
-        // Create new record
-        let newRecord = GameRecord.createNew(userName: userName, score: score)
+        // Create new record with current theme
+        let newRecord = GameRecord.createNew(userName: userName, score: score, theme: currentTheme)
         gameHistory.append(newRecord)
         
         // Update high score if needed
@@ -75,7 +79,7 @@ class GameDataManager: ObservableObject {
         }
     }
     
-    private func saveHistory() {
+    func saveHistory() {
         if let encoded = try? JSONEncoder().encode(gameHistory) {
             UserDefaults.standard.set(encoded, forKey: historyDefaultsKey)
         }
@@ -84,5 +88,11 @@ class GameDataManager: ObservableObject {
     func clearHistory() {
         gameHistory = []
         saveHistory()
+    }
+    
+    func setTheme(_ theme: String) {
+        if availableThemes.contains(theme) {
+            currentTheme = theme
+        }
     }
 }
