@@ -4,7 +4,6 @@
 //
 //  Created by Roy Nababan on 16/05/25.
 //
-
 import SwiftUI
 
 struct HomeScreen: View {
@@ -49,20 +48,20 @@ struct HomeScreen: View {
                         .padding(.bottom, 30)
 
                     // Navigation Buttons
-//                    NavigationLink(destination: GameView(showHistory: false).environmentObject(dataManager)) {
-//                        Text("Mulai Latihan")
-//                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
-//                    }
-//
-//                    NavigationLink(destination: TutorialView().environmentObject(dataManager)) {
-//                        Text("Lihat Video Tutorial")
-//                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
-//                    }
-//                    
-//                    NavigationLink(destination: GameView(showHistory: true).environmentObject(dataManager)) {
-//                        Text("Lihat Histori Nilai")
-//                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
-//                    }
+                    NavigationLink(destination: GameView(showHistory: false).environmentObject(dataManager)) {
+                        Text("Mulai Latihan")
+                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
+                    }
+
+                    NavigationLink(destination: TutorialView().environmentObject(dataManager)) {
+                        Text("Lihat Video Tutorial")
+                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
+                    }
+                    
+                    NavigationLink(destination: GameView(showHistory: true).environmentObject(dataManager)) {
+                        Text("Lihat Histori Nilai")
+                            .modifier(MainButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor))
+                    }
 
                     Spacer()
                 }
