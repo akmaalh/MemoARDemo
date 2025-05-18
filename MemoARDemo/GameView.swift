@@ -55,8 +55,14 @@ struct GameView: View {
                 case .garage:
                     TutorialView()
                 case .bathroom:
-                    TutorialView()
-                }
+                    BathroomARView(
+                        scoreUpdateHandler: { newScore in score = newScore },
+                        gameSaveHandler: { saveGameRecord(theme: theme) },
+                        requestSelectThemeHandler: { selectedTheme = nil },
+                        requestShowHistoryHandler: { selectedTheme = nil; showHistory = true },
+                        userName: currentUserName,
+                        themeDisplayName: currentThemeDisplayName
+                        )}
             } else if showHistory {
                 HistoryView()
             } else {
