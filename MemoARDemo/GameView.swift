@@ -53,7 +53,14 @@ struct GameView: View {
                         themeDisplayName: currentThemeDisplayName
                     )
                 case .garage:
-                    TutorialView()
+                    GarageARView(
+                        scoreUpdateHandler: { newScore in score = newScore },
+                        gameSaveHandler: { saveGameRecord(theme: theme) },
+                        requestSelectThemeHandler: { selectedTheme = nil },
+                        requestShowHistoryHandler: { selectedTheme = nil; showHistory = true },
+                        userName: currentUserName,
+                        themeDisplayName: currentThemeDisplayName
+                    )
                 case .bathroom:
                     BathroomARView(
                         scoreUpdateHandler: { newScore in score = newScore },
@@ -62,15 +69,16 @@ struct GameView: View {
                         requestShowHistoryHandler: { selectedTheme = nil; showHistory = true },
                         userName: currentUserName,
                         themeDisplayName: currentThemeDisplayName
-                        )}
+                    )
+                }
             } else if showHistory {
                 HistoryView()
             } else {
                 // Embed ThemeSelectionView in a ZStack for background color
                 ZStack {
                     backgroundColor.edgesIgnoringSafeArea(.all)
-                    ThemeSelectionView(selectedTheme: $selectedTheme, 
-                                       buttonColor: buttonColor, 
+                    ThemeSelectionView(selectedTheme: $selectedTheme,
+                                       buttonColor: buttonColor,
                                        buttonTextColor: buttonTextColor,
                                        textColor: textColor,
                                        logoColor: buttonColor) // Pass colors
@@ -172,4 +180,4 @@ struct UpdatedThemeButtonStyle: ButtonStyle {
 //#Preview {
 //    GameView(showHistory: false) // Pass the required argument
 //        .environmentObject(GameDataManager()) // Add environment object for preview
-//} 
+//}
