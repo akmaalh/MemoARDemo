@@ -12,6 +12,9 @@ struct GameView: View {
     let buttonColor = Color(red: 0.95, green: 0.69, blue: 0.26) // Orange
     let buttonTextColor = Color(red: 0.4, green: 0.2, blue: 0.1) // Dark Brown
     let textColor = Color(red: 0.2, green: 0.2, blue: 0.2) // Dark text
+    // add new color for button: F3C670 and B0410F
+    let mainColor = Color(red: 0.95, green: 0.78, blue: 0.44) // Soft Yellow
+    let secondaryColor = Color(red: 0.69, green: 0.25, blue: 0.07) // Dark Brown
 
     enum GameTheme {
         case kitchen
@@ -78,8 +81,8 @@ struct GameView: View {
                 ZStack {
                     backgroundColor.edgesIgnoringSafeArea(.all)
                     ThemeSelectionView(selectedTheme: $selectedTheme,
-                                       buttonColor: buttonColor,
-                                       buttonTextColor: buttonTextColor,
+                                       buttonColor: mainColor,
+                                       buttonTextColor: secondaryColor,
                                        textColor: textColor,
                                        logoColor: buttonColor) // Pass colors
                 }
@@ -111,9 +114,6 @@ struct GameView: View {
 
 struct ThemeSelectionView: View {
     @Binding var selectedTheme: GameView.GameTheme?
-    // @EnvironmentObject var dataManager: GameDataManager // No longer directly needed for UI
-    // @Binding var showHistory: Bool // No longer needed, history accessed from HomeScreen
-
     // Colors passed from GameView
     let buttonColor: Color
     let buttonTextColor: Color
@@ -121,40 +121,96 @@ struct ThemeSelectionView: View {
     let logoColor: Color
     
     var body: some View {
-        VStack(spacing: 30) { // Increased spacing
+        VStack(spacing: 30) {
             // Logo
-            Image(systemName: "brain.head.profile") // Placeholder for MemoAR logo
+            Image(systemName: "brain.head.profile")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 60, height: 60) // Smaller logo for this screen
+                .frame(width: 60, height: 60)
                 .foregroundColor(logoColor)
-                .padding(.top, 20) // Add some padding from the navigation bar
+                .padding(.top, 20)
 
             Text("Pilih Tema")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(.custom("verdana-bold", size: 34))
                 .foregroundColor(textColor)
-            
-            Button("Dapur") {
-                selectedTheme = .kitchen
+                .accessibilityAddTraits(.isHeader)
+
+            GeometryReader { geometry in
+                VStack(spacing: 20) {
+                    HStack(spacing: 20) {
+                        ThemeCardButton(
+                            assetName: "kitchen-icon",
+                            title: "Dapur",
+                            subtitle: "Tema Dapur",
+                            color: buttonColor,
+                            action: { selectedTheme = .kitchen },
+                            textColor: buttonTextColor,
+                            width: (geometry.size.width - 24 - 10) / 2
+                        )
+                        ThemeCardButton(
+                            assetName: "bathroom-icon",
+                            title: "Kamar Mandi",
+                            subtitle: "Tema Kamar Mandi",
+                            color: buttonColor,
+                            action: { selectedTheme = .bathroom },
+                            textColor: buttonTextColor,
+                            width: (geometry.size.width - 24 - 10) / 2
+                        )
+                    }
+                    HStack {
+                        Spacer(minLength: 0)
+                        ThemeCardButton(
+                            assetName: "garage-icon",
+                            title: "Garasi",
+                            subtitle: "Tema Garasi",
+                            color: buttonColor,
+                            action: { selectedTheme = .garage },
+                            textColor: buttonTextColor,
+                            width: (geometry.size.width - 24 - 10) / 2
+                        )
+                        Spacer(minLength: 0)
+                    }
+                }
+                .frame(width: geometry.size.width)
             }
-            .buttonStyle(UpdatedThemeButtonStyle(backgroundColor: buttonColor, textColor: buttonTextColor))
-            
-            Button("Kamar Mandi") {
-                selectedTheme = .bathroom
-            }
-            .buttonStyle(UpdatedThemeButtonStyle(backgroundColor: buttonColor, textColor: buttonTextColor))
-            
-            Button("Garasi") {
-                selectedTheme = .garage
-            }
-            .buttonStyle(UpdatedThemeButtonStyle(backgroundColor: buttonColor, textColor: buttonTextColor))
-            
-            Spacer() // Pushes content to the top
+            .frame(height: 380)
+            Spacer()
         }
-        .padding(.horizontal, 40) // Add horizontal padding
-        // .navigationTitle("Pilih Tema") // Set navigation title
-        // .navigationBarTitleDisplayMode(.inline) // Optional: if you want smaller title
+        .padding(.horizontal, 12)
+    }
+}
+
+struct ThemeCardButton: View {
+    let assetName: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    let action: () -> Void
+    let textColor: Color
+    let width: CGFloat
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(assetName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 56, height: 56)
+                    .padding(.top, 18)
+                    .padding(.bottom, 14)
+                    .foregroundColor(textColor)
+                Text(title)
+                    .font(.custom("verdana-bold", size: 18))
+                    .foregroundColor(textColor)
+            }
+            .frame(width: width, height: 150)
+            .background(color)
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: color.opacity(0.18), radius: 8, x: 0, y: 4)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(title), \(subtitle)")
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -177,7 +233,7 @@ struct UpdatedThemeButtonStyle: ButtonStyle {
     }
 }
 
-//#Preview {
-//    GameView(showHistory: false) // Pass the required argument
-//        .environmentObject(GameDataManager()) // Add environment object for preview
-//}
+#Preview {
+    GameView(showHistory: false) // Pass the required argument
+        .environmentObject(GameDataManager()) // Add environment object for preview
+}
