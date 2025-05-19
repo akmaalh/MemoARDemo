@@ -40,6 +40,10 @@ class GameDataManager: ObservableObject {
         return currentUser != nil && !(currentUser?.name.isEmpty ?? true)
     }
     
+    func getCurrentUser() -> User? {
+        return currentUser
+    }
+    
     func saveUser(_ user: User) {
         currentUser = user
         if let encoded = try? JSONEncoder().encode(user) {
