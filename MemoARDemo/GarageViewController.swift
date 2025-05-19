@@ -11,6 +11,7 @@ import SceneKit
 import ARKit
 import CoreHaptics
 import SwiftUI
+import AVFoundation
 
 class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDelegate {
     // MARK: - Properties
@@ -25,8 +26,12 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     // Game variables
     var score = 0
     var gameTimer: Timer?
-    var gameTimeRemaining = 15
+    var gameTimeRemaining = 30
     var isGameActive = false
+    
+    // Initial camera position
+    private var initialCameraPosition: SCNVector3?
+    private var initialCameraForward: Float?
     
     // UI elements
     private var scoreLabel: UILabel!
@@ -48,7 +53,14 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     
     // Debug mode flag
     private let debugMode = false
-    private let maxObjects = 5
+    private let maxObjects = 4
+    
+    // Sound effects
+    private var timerSoundPlayer: AVAudioPlayer?
+    private var foundSoundPlayer: AVAudioPlayer?
+    private var wrongSoundPlayer: AVAudioPlayer?
+    private var timerSoundDuration: TimeInterval = 7.0 // 5 seconds sound file
+    private var lastTimerSoundTime: TimeInterval = 0
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -57,6 +69,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         setupUI()
         setupTapGestureRecognizer()
         setupHaptics()
+        setupSoundEffects()
         loadObjectTemplates()
     }
     
@@ -99,7 +112,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         
         // Timer Label
         timerLabel = UILabel()
-        timerLabel.text = "Time: 15s"
+        timerLabel.text = "Time: 30s"
         timerLabel.textColor = .white
         timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         timerLabel.textAlignment = .center
@@ -148,6 +161,39 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         hapticFeedbackGenerator?.prepare()
     }
     
+    private func setupSoundEffects() {
+        // Setup timer sound
+        if let timerSoundURL = Bundle.main.url(forResource: "timer_tick", withExtension: "mp3") {
+            do {
+                timerSoundPlayer = try AVAudioPlayer(contentsOf: timerSoundURL)
+                timerSoundPlayer?.prepareToPlay()
+                timerSoundDuration = timerSoundPlayer?.duration ?? 6.0
+            } catch {
+                print("Could not create timer sound player: \(error)")
+            }
+        }
+        
+        // Setup found object sound
+        if let foundSoundURL = Bundle.main.url(forResource: "object_found", withExtension: "mp3") {
+            do {
+                foundSoundPlayer = try AVAudioPlayer(contentsOf: foundSoundURL)
+                foundSoundPlayer?.prepareToPlay()
+            } catch {
+                print("Could not create found sound player: \(error)")
+            }
+        }
+        
+        // Setup wrong object sound
+        if let wrongSoundURL = Bundle.main.url(forResource: "wrong_object", withExtension: "mp3") {
+            do {
+                wrongSoundPlayer = try AVAudioPlayer(contentsOf: wrongSoundURL)
+                wrongSoundPlayer?.prepareToPlay()
+            } catch {
+                print("Could not create wrong sound player: \(error)")
+            }
+        }
+    }
+    
     // MARK: - Object Templates
     private func loadObjectTemplates() {
         // Preload normal items
@@ -164,13 +210,28 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     // MARK: - Game Logic
     @objc func startGame() {
         score = 0
-        gameTimeRemaining = 15
+        gameTimeRemaining = 30
         isGameActive = true
         updateScoreLabel()
         updateTimerLabel()
         
+        // Store initial camera position when game starts
+        if let cameraTransform = sceneView.session.currentFrame?.camera.transform {
+            let cameraMat = SCNMatrix4(cameraTransform)
+            initialCameraPosition = SCNVector3(cameraMat.m41, cameraMat.m42, cameraMat.m43)
+            
+            // Calculate initial forward angle
+            let forwardX = -cameraMat.m31
+            let forwardZ = -cameraMat.m33
+            initialCameraForward = atan2(forwardX, forwardZ)
+        }
+        
         clearAllObjects()
         startButton.isHidden = true
+        
+        // Start timer sound from beginning
+        timerSoundPlayer?.currentTime = 0
+        timerSoundPlayer?.play()
         
         gameTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateGameTimer), userInfo: nil, repeats: true)
         placeGameObjects()
@@ -182,15 +243,20 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         isGameActive = false
         startButton.isHidden = false
         clearAllObjects()
+        
+        // Stop timer sound
+        timerSoundPlayer?.stop()
     }
     
     private func clearAllObjects() {
         for node in garageNodes {
+            node.removeAllActions() // Stop any running animations
             node.removeFromParentNode()
         }
         garageNodes.removeAll()
         
         if let node = unusualNode {
+            node.removeAllActions() // Stop any running animations
             node.removeFromParentNode()
             unusualNode = nil
         }
@@ -199,6 +265,21 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     @objc func updateGameTimer() {
         gameTimeRemaining -= 1
         updateTimerLabel()
+        
+        // Play timer sound at appropriate position
+        if let player = timerSoundPlayer {
+            let currentTime = player.currentTime
+            let timePerSecond = timerSoundDuration / 30.0 // Divide 5 seconds into 30 parts
+            
+            // Calculate the position in the sound file for this second
+            let targetTime = timePerSecond * TimeInterval(30 - gameTimeRemaining)
+            
+            // If we've moved to a new second, play from that position
+            if abs(currentTime - targetTime) > 0.1 {
+                player.currentTime = targetTime
+                player.play()
+            }
+        }
         
         if gameTimeRemaining <= 0 {
             gameTimer?.invalidate()
@@ -265,11 +346,46 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         template.name = randomType
         template.setValue("Normal", forKey: "category")
         
-        let randomPosition = generateRandomPosition()
-        template.position = randomPosition
+        // Calculate position based on the number of existing objects
+        let position = calculateEvenlyDistributedPosition()
+        template.position = position
+        
+        // Add rotation animation with slower speed
+        let rotation = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 4.0)
+        let repeatRotation = SCNAction.repeatForever(rotation)
+        template.runAction(repeatRotation)
         
         sceneView.scene.rootNode.addChildNode(template)
         garageNodes.append(template)
+    }
+    
+    private func calculateEvenlyDistributedPosition() -> SCNVector3 {
+        guard let initialPos = initialCameraPosition,
+              let initialForward = initialCameraForward else {
+            return SCNVector3(0, 0, -0.8)
+        }
+        
+        // Calculate the angle based on the number of existing objects
+        let objectCount = garageNodes.count
+        let totalArc = Float.pi / 2 // 90 degrees total arc
+        let angleStep = totalArc / Float(maxObjects) // Divide the arc into equal segments
+        let baseAngle = initialForward - totalArc/2 + angleStep * Float(objectCount) // Center the arc around initial forward direction
+        
+        // Add some randomness to the angle but keep it within its segment
+        let randomAngleVariation = Float.random(in: -angleStep/4...angleStep/4)
+        let finalAngle = baseAngle + randomAngleVariation
+        
+        // Calculate distance with some controlled randomness
+        let baseDistance = Float(1.5) // Increased base distance
+        let distanceVariation = Float.random(in: 0.0...0.3) // Only positive variation to ensure minimum distance
+        let distance = baseDistance + distanceVariation
+        
+        // Calculate position with more vertical randomness
+        let xPosition = initialPos.x + sin(finalAngle) * distance
+        let zPosition = initialPos.z + cos(finalAngle) * distance
+        let yPosition = initialPos.y + Float.random(in: Float(-0.6)...Float(0.0)) // Increased vertical range
+        
+        return SCNVector3(xPosition, yPosition, zPosition)
     }
     
     private func placeRandomUnusualObject() {
@@ -279,18 +395,73 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         template.name = randomType
         template.setValue("Unusual", forKey: "category")
         
-        var randomPosition = generateRandomPosition()
+        // Try to find a valid position for the unusual object
+        var position = calculateUnusualObjectPosition()
         var attempts = 0
-        let maxAttempts = 15
+        let maxAttempts = 10
         
-        while isPositionTooCloseToExistingObjects(randomPosition) && attempts < maxAttempts {
-            randomPosition = generateRandomPosition()
+        while isPositionTooCloseToExistingObjects(position) && attempts < maxAttempts {
+            position = calculateUnusualObjectPosition()
             attempts += 1
         }
         
-        template.position = randomPosition
+        template.position = position
+        
+        // Add rotation animation with slower speed for unusual object
+        let rotation = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 3.0)
+        let repeatRotation = SCNAction.repeatForever(rotation)
+        template.runAction(repeatRotation)
+        
         sceneView.scene.rootNode.addChildNode(template)
         unusualNode = template
+    }
+    
+    private func calculateUnusualObjectPosition() -> SCNVector3 {
+        guard let initialPos = initialCameraPosition,
+              let initialForward = initialCameraForward else {
+            return SCNVector3(0, 0, -0.8)
+        }
+        
+        // Place unusual object in the same arc as normal objects
+        let totalArc = Float.pi / 2 // 90 degrees total arc
+        let angleStep = totalArc / Float(maxObjects)
+        // Choose a random position between normal objects
+        let randomIndex = Int.random(in: 0...maxObjects)
+        let baseAngle = initialForward - totalArc/2 + angleStep * Float(randomIndex) // Center the arc around initial forward direction
+        
+        // Add some randomness to the angle but keep it within its segment
+        let randomAngleVariation = Float.random(in: -angleStep/4...angleStep/4)
+        let finalAngle = baseAngle + randomAngleVariation
+        
+        // Use a different distance range for unusual objects
+        let baseDistance = Float(1.7) // Further than normal objects
+        let distanceVariation = Float.random(in: 0.0...0.3) // Only positive variation
+        let distance = baseDistance + distanceVariation
+        
+        // Calculate position with more vertical randomness
+        let xPosition = initialPos.x + sin(finalAngle) * distance
+        let zPosition = initialPos.z + cos(finalAngle) * distance
+        let yPosition = initialPos.y + Float.random(in: Float(-0.6)...Float(0.0)) // Increased vertical range
+        
+        return SCNVector3(xPosition, yPosition, zPosition)
+    }
+    
+    private func isPositionTooCloseToExistingObjects(_ position: SCNVector3, minimumDistance: Float = 0.5) -> Bool {
+        // Check distance to all normal objects
+        for node in garageNodes {
+            let distance = calculateDistance(position, node.position)
+            if distance < minimumDistance {
+                return true
+            }
+        }
+        return false
+    }
+    
+    private func calculateDistance(_ point1: SCNVector3, _ point2: SCNVector3) -> Float {
+        let dx = point1.x - point2.x
+        let dy = point1.y - point2.y
+        let dz = point1.z - point2.z
+        return sqrt(dx*dx + dy*dy + dz*dz)
     }
     
     private func loadObjectTemplate(named name: String) -> SCNNode? {
@@ -311,29 +482,6 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         
         node.scale = SCNVector3(scale, scale, scale)
         return node
-    }
-    
-    private func generateRandomPosition() -> SCNVector3 {
-        guard let cameraTransform = sceneView.session.currentFrame?.camera.transform else {
-            return SCNVector3(0, 0, -0.8)
-        }
-        
-        let cameraMat = SCNMatrix4(cameraTransform)
-        let cameraPos = SCNVector3(cameraMat.m41, cameraMat.m42, cameraMat.m43)
-        
-        let randomAngle = Float.random(in: -Float.pi/3...Float.pi/3)
-        let distance = Float.random(in: 0.8...1.5)
-        
-        let forwardX = -cameraMat.m31
-        let forwardZ = -cameraMat.m33
-        let forwardAngle = atan2(forwardX, forwardZ)
-        let finalAngle = forwardAngle + randomAngle
-        
-        let xPosition = cameraPos.x + sin(finalAngle) * distance
-        let zPosition = cameraPos.z + cos(finalAngle) * distance
-        let yPosition = cameraPos.y + Float.random(in: -0.4 ... -0.2)
-        
-        return SCNVector3(xPosition, yPosition, zPosition)
     }
     
     private func centerNodeInParent(_ node: SCNNode) {
@@ -376,39 +524,20 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
                 score += 1
                 updateScoreLabel()
                 triggerHapticFeedback(style: .heavy)
+                // Play found sound
+                foundSoundPlayer?.currentTime = 0
+                foundSoundPlayer?.play()
                 showFloatingText(at: tapLocation, text: "+1", color: .green)
                 placeGameObjects()
             } else {
                 let objectName = hitNode.name ?? "object"
                 triggerHapticFeedback(style: .medium)
+                // Play wrong sound
+                wrongSoundPlayer?.currentTime = 0
+                wrongSoundPlayer?.play()
                 showAlert(title: "Incorrect", message: "That's a normal garage object!")
             }
         }
-    }
-    
-    private func isPositionTooCloseToExistingObjects(_ position: SCNVector3, minimumDistance: Float = 0.3) -> Bool {
-        for node in garageNodes {
-            let distance = calculateDistance(position, node.position)
-            if distance < minimumDistance {
-                return true
-            }
-        }
-        
-        if let unusualNode = unusualNode {
-            let distance = calculateDistance(position, unusualNode.position)
-            if distance < minimumDistance {
-                return true
-            }
-        }
-        
-        return false
-    }
-    
-    private func calculateDistance(_ point1: SCNVector3, _ point2: SCNVector3) -> Float {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        let dz = point1.z - point2.z
-        return sqrt(dx*dx + dy*dy + dz*dz)
     }
     
     // MARK: - Feedback Helpers
