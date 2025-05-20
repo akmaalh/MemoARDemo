@@ -3,6 +3,7 @@ import SceneKit
 import ARKit
 import CoreHaptics
 import SwiftUI
+import AVFoundation
 
 class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecognizerDelegate {
     // MARK: - Properties
@@ -17,8 +18,16 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
     // Game variables
     var score = 0
     var gameTimer: Timer?
-    var gameTimeRemaining = 15
+    var gameTimeRemaining = 60
     var isGameActive = false
+    
+    // Initial camera position
+    private var initialCameraPosition: SCNVector3?
+    private var initialCameraForward: Float?
+    
+    // Predefined position sets
+    private var positionSets: [[SCNVector3]] = []
+    private var currentPositionSet: [SCNVector3] = []
     
     // UI elements
     private var scoreLabel: UILabel!
@@ -40,7 +49,14 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
     
     // Debug mode flag
     private let debugMode = false
-    private let maxObjects = 5
+    private let maxObjects = 4
+    
+    // Sound effects
+    private var timerSoundPlayer: AVAudioPlayer?
+    private var foundSoundPlayer: AVAudioPlayer?
+    private var wrongSoundPlayer: AVAudioPlayer?
+    private var timerSoundDuration: TimeInterval = 32.0
+    private var lastTimerSoundTime: TimeInterval = 0
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -49,6 +65,7 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         setupUI()
         setupTapGestureRecognizer()
         setupHaptics()
+        setupSoundEffects()
         loadObjectTemplates()
     }
     
@@ -91,7 +108,7 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         
         // Timer Label
         timerLabel = UILabel()
-        timerLabel.text = "Time: 15s"
+        timerLabel.text = "Time: 60s"
         timerLabel.textColor = .white
         timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         timerLabel.textAlignment = .center
@@ -140,6 +157,40 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         hapticFeedbackGenerator?.prepare()
     }
     
+    private func setupSoundEffects() {
+        // Setup timer sound
+        if let timerSoundURL = Bundle.main.url(forResource: "background_music", withExtension: "mp3") {
+            do {
+                timerSoundPlayer = try AVAudioPlayer(contentsOf: timerSoundURL)
+                timerSoundPlayer?.numberOfLoops = -1
+                timerSoundPlayer?.prepareToPlay()
+                timerSoundDuration = timerSoundPlayer?.duration ?? 32.0
+            } catch {
+                print("Could not create timer sound player: \(error)")
+            }
+        }
+        
+        // Setup found object sound
+        if let foundSoundURL = Bundle.main.url(forResource: "object_found", withExtension: "mp3") {
+            do {
+                foundSoundPlayer = try AVAudioPlayer(contentsOf: foundSoundURL)
+                foundSoundPlayer?.prepareToPlay()
+            } catch {
+                print("Could not create found sound player: \(error)")
+            }
+        }
+        
+        // Setup wrong object sound
+        if let wrongSoundURL = Bundle.main.url(forResource: "wrong_object", withExtension: "mp3") {
+            do {
+                wrongSoundPlayer = try AVAudioPlayer(contentsOf: wrongSoundURL)
+                wrongSoundPlayer?.prepareToPlay()
+            } catch {
+                print("Could not create wrong sound player: \(error)")
+            }
+        }
+    }
+    
     // MARK: - Object Templates
     private func loadObjectTemplates() {
         // Preload normal items
@@ -156,13 +207,31 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
     // MARK: - Game Logic
     @objc func startGame() {
         score = 0
-        gameTimeRemaining = 15
+        gameTimeRemaining = 60
         isGameActive = true
         updateScoreLabel()
         updateTimerLabel()
         
+        // Store initial camera position when game starts
+        if let cameraTransform = sceneView.session.currentFrame?.camera.transform {
+            let cameraMat = SCNMatrix4(cameraTransform)
+            initialCameraPosition = SCNVector3(cameraMat.m41, cameraMat.m42, cameraMat.m43)
+            
+            // Calculate initial forward angle
+            let forwardX = -cameraMat.m31
+            let forwardZ = -cameraMat.m33
+            initialCameraForward = atan2(forwardX, forwardZ)
+            
+            // Generate new position sets
+            generatePositionSets()
+        }
+        
         clearAllObjects()
         startButton.isHidden = true
+        
+        // Start timer sound from beginning
+        timerSoundPlayer?.currentTime = 0
+        timerSoundPlayer?.play()
         
         gameTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateGameTimer), userInfo: nil, repeats: true)
         placeGameObjects()
@@ -174,15 +243,20 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         isGameActive = false
         startButton.isHidden = false
         clearAllObjects()
+        
+        // Stop timer sound
+        timerSoundPlayer?.stop()
     }
     
     private func clearAllObjects() {
         for node in kitchenNodes {
+            node.removeAllActions() // Stop any running animations
             node.removeFromParentNode()
         }
         kitchenNodes.removeAll()
         
         if let node = unusualNode {
+            node.removeAllActions() // Stop any running animations
             node.removeFromParentNode()
             unusualNode = nil
         }
@@ -195,6 +269,7 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         if gameTimeRemaining <= 0 {
             gameTimer?.invalidate()
             isGameActive = false
+            timerSoundPlayer?.stop()
             showCustomGameOverUI()
         }
     }
@@ -232,54 +307,122 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
 
         DispatchQueue.main.async {
             self.present(hostingController, animated: true) {
+                // Ensure the start button in the AR view is visible behind the modal, if needed.
             }
             self.startButton.isHidden = false
         }
     }
     
     // MARK: - Object Placement
+    private func generatePositionSets() {
+        guard let initialPos = initialCameraPosition,
+              let initialForward = initialCameraForward else {
+            return
+        }
+        
+        positionSets = []
+        let fixedZDistance = Float(2.5) // Fixed distance in Z axis
+        let pentagonRadius = Float(1.5) // Radius of the pentagon in X-Y plane
+        
+        // Generate three sets of positions
+        for setIndex in 0..<3 {
+            var positions: [SCNVector3] = []
+            let setOffset = Float(setIndex) * (Float.pi / 6) // 30-degree offset between sets
+            
+            // Calculate the center point of the pentagon
+            let centerX = initialPos.x + sin(initialForward) * fixedZDistance
+            let centerZ = initialPos.z + cos(initialForward) * fixedZDistance
+            let centerY = initialPos.y
+            
+            // Generate 5 positions in a pentagon shape
+            for i in 0..<5 {
+                // Calculate pentagon angles (72 degrees between each point)
+                let pentagonAngle = (Float.pi * 2 / 5) * Float(i) + setOffset
+                
+                // Calculate X and Y coordinates for the pentagon point
+                let xOffset = sin(pentagonAngle) * pentagonRadius
+                let yOffset = cos(pentagonAngle) * pentagonRadius
+                
+                // Create the position
+                let position = SCNVector3(
+                    centerX + xOffset,
+                    centerY + yOffset,
+                    centerZ
+                )
+                
+                positions.append(position)
+            }
+            positionSets.append(positions)
+        }
+    }
+    
+    private func selectRandomPositionSet() {
+        currentPositionSet = positionSets.randomElement() ?? []
+    }
+    
     private func placeGameObjects() {
         clearAllObjects()
         
-        let objectCount = Int.random(in: 3...maxObjects)
-        for _ in 0..<objectCount {
-            placeRandomNormalObject()
+        // Generate new position sets if needed
+        if positionSets.isEmpty {
+            generatePositionSets()
         }
         
-        placeRandomUnusualObject()
+        // Select a random position set
+        selectRandomPositionSet()
+        
+        // Create a copy of positions and shuffle them
+        var availablePositions = currentPositionSet
+        
+        // Randomly select which position will have the unusual object
+        let unusualObjectIndex = Int.random(in: 0..<5)
+        
+        // Place objects
+        for i in 0..<5 {
+            if i == unusualObjectIndex {
+                // Place unusual object at this position
+                placeRandomUnusualObject(at: availablePositions[i])
+            } else {
+                // Place normal object at this position
+                placeRandomNormalObject(at: availablePositions[i])
+            }
+        }
     }
     
-    private func placeRandomNormalObject() {
+    private func placeRandomNormalObject(at position: SCNVector3) {
         guard let randomType = normalItems.randomElement() else { return }
         guard let template = loadObjectTemplate(named: randomType)?.clone() else { return }
         
         template.name = randomType
         template.setValue("Normal", forKey: "category")
+        template.position = position
         
-        let randomPosition = generateRandomPosition()
-        template.position = randomPosition
+        // Add rotation animation
+        let rotationY = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 10.0)
+        let rotationX = SCNAction.rotateBy(x: CGFloat(2 * Double.pi), y: 0, z: 0, duration: 10.0)
+        let combinedRotation = SCNAction.group([rotationY, rotationX])
+        let repeatRotation = SCNAction.repeatForever(combinedRotation)
+        template.runAction(repeatRotation)
         
         sceneView.scene.rootNode.addChildNode(template)
         kitchenNodes.append(template)
     }
     
-    private func placeRandomUnusualObject() {
+    private func placeRandomUnusualObject(at position: SCNVector3) {
         guard let randomType = unusualItems.randomElement() else { return }
         guard let template = loadObjectTemplate(named: randomType)?.clone() else { return }
         
         template.name = randomType
         template.setValue("Unusual", forKey: "category")
+        template.position = position
         
-        var randomPosition = generateRandomPosition()
-        var attempts = 0
-        let maxAttempts = 15
-        
-        while isPositionTooCloseToExistingObjects(randomPosition) && attempts < maxAttempts {
-            randomPosition = generateRandomPosition()
-            attempts += 1
-        }
-        
-        template.position = randomPosition
+        // Add rotation animation
+        let rotationY = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 10.0)
+        let rotationX = SCNAction.rotateBy(x: CGFloat(2 * Double.pi), y: 0, z: 0, duration: 10.0)
+        let combinedRotation = SCNAction.group([rotationY, rotationX])
+        let repeatRotation = SCNAction.repeatForever(combinedRotation)
+        template.runAction(repeatRotation)
+
         sceneView.scene.rootNode.addChildNode(template)
         unusualNode = template
     }
@@ -291,40 +434,26 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         
         let scale: Float = {
             switch name {
-            case "blender", "helmet", "basketball": return 0.001
-            case "stove", "laptop", "camera", "tire", "teapot", "handsoap": return 0.01
-            case "plate", "drill": return 0.03
-            case "toothbrush", "sink", "bucket", "meds": return 0.001
-            case "redbull", "wrench", "pipewrench": return 0.001
-            default: return 0.01
+            case "helmet", "basketball": return 0.002
+            case "blender": return 0.003
+            case "camera": return 0.007
+            case "tire"  : return 0.07
+            case "sink" : return 0.005
+            case "laptop": return 0.05
+            case "teapot": return 0.04
+            case "handsoap" : return 0.02
+            case "drill": return 0.03
+            case "plate": return 0.08
+            case "toothbrush", "meds": return 0.002
+            case "bucket": return 0.002
+            case "wrench", "pipewrench": return 0.003
+            case "redbull": return 0.002
+            default: return 0.02
             }
         }()
         
         node.scale = SCNVector3(scale, scale, scale)
         return node
-    }
-    
-    private func generateRandomPosition() -> SCNVector3 {
-        guard let cameraTransform = sceneView.session.currentFrame?.camera.transform else {
-            return SCNVector3(0, 0, -0.8)
-        }
-        
-        let cameraMat = SCNMatrix4(cameraTransform)
-        let cameraPos = SCNVector3(cameraMat.m41, cameraMat.m42, cameraMat.m43)
-        
-        let randomAngle = Float.random(in: -Float.pi/3...Float.pi/3)
-        let distance = Float.random(in: 0.8...1.5)
-        
-        let forwardX = -cameraMat.m31
-        let forwardZ = -cameraMat.m33
-        let forwardAngle = atan2(forwardX, forwardZ)
-        let finalAngle = forwardAngle + randomAngle
-        
-        let xPosition = cameraPos.x + sin(finalAngle) * distance
-        let zPosition = cameraPos.z + cos(finalAngle) * distance
-        let yPosition = cameraPos.y + Float.random(in: -0.4 ... -0.2)
-        
-        return SCNVector3(xPosition, yPosition, zPosition)
     }
     
     private func centerNodeInParent(_ node: SCNNode) {
@@ -367,39 +496,20 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
                 score += 1
                 updateScoreLabel()
                 triggerHapticFeedback(style: .heavy)
+                // Play found sound
+                foundSoundPlayer?.currentTime = 0
+                foundSoundPlayer?.play()
                 showFloatingText(at: tapLocation, text: "+1", color: .green)
                 placeGameObjects()
             } else {
                 let objectName = hitNode.name ?? "object"
                 triggerHapticFeedback(style: .medium)
+                // Play wrong sound
+                wrongSoundPlayer?.currentTime = 0
+                wrongSoundPlayer?.play()
                 showAlert(title: "Incorrect", message: "That's a normal kitchen object!")
             }
         }
-    }
-    
-    private func isPositionTooCloseToExistingObjects(_ position: SCNVector3, minimumDistance: Float = 0.3) -> Bool {
-        for node in kitchenNodes {
-            let distance = calculateDistance(position, node.position)
-            if distance < minimumDistance {
-                return true
-            }
-        }
-        
-        if let unusualNode = unusualNode {
-            let distance = calculateDistance(position, unusualNode.position)
-            if distance < minimumDistance {
-                return true
-            }
-        }
-        
-        return false
-    }
-    
-    private func calculateDistance(_ point1: SCNVector3, _ point2: SCNVector3) -> Float {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        let dz = point1.z - point2.z
-        return sqrt(dx*dx + dy*dy + dz*dz)
     }
     
     // MARK: - Feedback Helpers

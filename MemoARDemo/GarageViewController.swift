@@ -26,12 +26,16 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     // Game variables
     var score = 0
     var gameTimer: Timer?
-    var gameTimeRemaining = 30
+    var gameTimeRemaining = 60
     var isGameActive = false
     
     // Initial camera position
     private var initialCameraPosition: SCNVector3?
     private var initialCameraForward: Float?
+    
+    // Predefined position sets
+    private var positionSets: [[SCNVector3]] = []
+    private var currentPositionSet: [SCNVector3] = []
     
     // UI elements
     private var scoreLabel: UILabel!
@@ -46,10 +50,10 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     private var unusualNode: SCNNode?
     
     // Theme-specific normal items
-    private let normalItems = ["redbull", "wrench", "pipewrench", "drill", "helmet", "tire", "basketball"]
+    private let normalItems = ["bucket", "wrench", "pipewrench", "drill", "helmet", "tire", "basketball"]
     
     // Theme-specific unusual items
-    private let unusualItems = ["blender", "stove", "plate", "teapot", "toothbrush", "sink", "bucket", "handsoap", "meds", "laptop", "camera"]
+    private let unusualItems = ["blender", "stove", "plate", "teapot", "toothbrush", "sink", "redbull", "handsoap", "meds", "laptop", "camera"]
     
     // Debug mode flag
     private let debugMode = false
@@ -59,7 +63,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     private var timerSoundPlayer: AVAudioPlayer?
     private var foundSoundPlayer: AVAudioPlayer?
     private var wrongSoundPlayer: AVAudioPlayer?
-    private var timerSoundDuration: TimeInterval = 7.0 // 5 seconds sound file
+    private var timerSoundDuration: TimeInterval = 32.0
     private var lastTimerSoundTime: TimeInterval = 0
     
     // MARK: - Lifecycle
@@ -112,7 +116,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         
         // Timer Label
         timerLabel = UILabel()
-        timerLabel.text = "Time: 30s"
+        timerLabel.text = "Time: 60s"
         timerLabel.textColor = .white
         timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         timerLabel.textAlignment = .center
@@ -163,11 +167,12 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     
     private func setupSoundEffects() {
         // Setup timer sound
-        if let timerSoundURL = Bundle.main.url(forResource: "timer_tick", withExtension: "mp3") {
+        if let timerSoundURL = Bundle.main.url(forResource: "background_music", withExtension: "mp3") {
             do {
                 timerSoundPlayer = try AVAudioPlayer(contentsOf: timerSoundURL)
+                timerSoundPlayer?.numberOfLoops = -1
                 timerSoundPlayer?.prepareToPlay()
-                timerSoundDuration = timerSoundPlayer?.duration ?? 6.0
+                timerSoundDuration = timerSoundPlayer?.duration ?? 32.0
             } catch {
                 print("Could not create timer sound player: \(error)")
             }
@@ -210,7 +215,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     // MARK: - Game Logic
     @objc func startGame() {
         score = 0
-        gameTimeRemaining = 30
+        gameTimeRemaining = 60
         isGameActive = true
         updateScoreLabel()
         updateTimerLabel()
@@ -224,6 +229,9 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
             let forwardX = -cameraMat.m31
             let forwardZ = -cameraMat.m33
             initialCameraForward = atan2(forwardX, forwardZ)
+            
+            // Generate new position sets
+            generatePositionSets()
         }
         
         clearAllObjects()
@@ -266,24 +274,10 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         gameTimeRemaining -= 1
         updateTimerLabel()
         
-        // Play timer sound at appropriate position
-        if let player = timerSoundPlayer {
-            let currentTime = player.currentTime
-            let timePerSecond = timerSoundDuration / 30.0 // Divide 5 seconds into 30 parts
-            
-            // Calculate the position in the sound file for this second
-            let targetTime = timePerSecond * TimeInterval(30 - gameTimeRemaining)
-            
-            // If we've moved to a new second, play from that position
-            if abs(currentTime - targetTime) > 0.1 {
-                player.currentTime = targetTime
-                player.play()
-            }
-        }
-        
         if gameTimeRemaining <= 0 {
             gameTimer?.invalidate()
             isGameActive = false
+            timerSoundPlayer?.stop()
             showCustomGameOverUI()
         }
     }
@@ -328,140 +322,117 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     }
     
     // MARK: - Object Placement
+    private func generatePositionSets() {
+        guard let initialPos = initialCameraPosition,
+              let initialForward = initialCameraForward else {
+            return
+        }
+        
+        positionSets = []
+        let fixedZDistance = Float(2.5) // Fixed distance in Z axis
+        let pentagonRadius = Float(1.5) // Radius of the pentagon in X-Y plane
+        
+        // Generate three sets of positions
+        for setIndex in 0..<3 {
+            var positions: [SCNVector3] = []
+            let setOffset = Float(setIndex) * (Float.pi / 6) // 30-degree offset between sets
+            
+            // Calculate the center point of the pentagon
+            let centerX = initialPos.x + sin(initialForward) * fixedZDistance
+            let centerZ = initialPos.z + cos(initialForward) * fixedZDistance
+            let centerY = initialPos.y
+            
+            // Generate 5 positions in a pentagon shape
+            for i in 0..<5 {
+                // Calculate pentagon angles (72 degrees between each point)
+                let pentagonAngle = (Float.pi * 2 / 5) * Float(i) + setOffset
+                
+                // Calculate X and Y coordinates for the pentagon point
+                let xOffset = sin(pentagonAngle) * pentagonRadius
+                let yOffset = cos(pentagonAngle) * pentagonRadius
+                
+                // Create the position
+                let position = SCNVector3(
+                    centerX + xOffset,
+                    centerY + yOffset,
+                    centerZ
+                )
+                
+                positions.append(position)
+            }
+            positionSets.append(positions)
+        }
+    }
+    
+    private func selectRandomPositionSet() {
+        currentPositionSet = positionSets.randomElement() ?? []
+    }
+    
     private func placeGameObjects() {
         clearAllObjects()
         
-        let objectCount = Int.random(in: 3...maxObjects)
-        for _ in 0..<objectCount {
-            placeRandomNormalObject()
+        // Generate new position sets if needed
+        if positionSets.isEmpty {
+            generatePositionSets()
         }
         
-        placeRandomUnusualObject()
+        // Select a random position set
+        selectRandomPositionSet()
+        
+        // Create a copy of positions and shuffle them
+        var availablePositions = currentPositionSet
+        
+        // Randomly select which position will have the unusual object
+        let unusualObjectIndex = Int.random(in: 0..<5)
+        
+        // Place objects
+        for i in 0..<5 {
+            if i == unusualObjectIndex {
+                // Place unusual object at this position
+                placeRandomUnusualObject(at: availablePositions[i])
+            } else {
+                // Place normal object at this position
+                placeRandomNormalObject(at: availablePositions[i])
+            }
+        }
     }
     
-    private func placeRandomNormalObject() {
+    private func placeRandomNormalObject(at position: SCNVector3) {
         guard let randomType = normalItems.randomElement() else { return }
         guard let template = loadObjectTemplate(named: randomType)?.clone() else { return }
         
         template.name = randomType
         template.setValue("Normal", forKey: "category")
-        
-        // Calculate position based on the number of existing objects
-        let position = calculateEvenlyDistributedPosition()
         template.position = position
         
-        // Add rotation animation with slower speed
-        let rotation = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 4.0)
-        let repeatRotation = SCNAction.repeatForever(rotation)
+        // Add rotation animation
+        let rotationY = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 10.0)
+        let rotationX = SCNAction.rotateBy(x: CGFloat(2 * Double.pi), y: 0, z: 0, duration: 10.0)
+        let combinedRotation = SCNAction.group([rotationY, rotationX])
+        let repeatRotation = SCNAction.repeatForever(combinedRotation)
         template.runAction(repeatRotation)
         
         sceneView.scene.rootNode.addChildNode(template)
         garageNodes.append(template)
     }
     
-    private func calculateEvenlyDistributedPosition() -> SCNVector3 {
-        guard let initialPos = initialCameraPosition,
-              let initialForward = initialCameraForward else {
-            return SCNVector3(0, 0, -0.8)
-        }
-        
-        // Calculate the angle based on the number of existing objects
-        let objectCount = garageNodes.count
-        let totalArc = Float.pi / 2 // 90 degrees total arc
-        let angleStep = totalArc / Float(maxObjects) // Divide the arc into equal segments
-        let baseAngle = initialForward - totalArc/2 + angleStep * Float(objectCount) // Center the arc around initial forward direction
-        
-        // Add some randomness to the angle but keep it within its segment
-        let randomAngleVariation = Float.random(in: -angleStep/4...angleStep/4)
-        let finalAngle = baseAngle + randomAngleVariation
-        
-        // Calculate distance with some controlled randomness
-        let baseDistance = Float(1.5) // Increased base distance
-        let distanceVariation = Float.random(in: 0.0...0.3) // Only positive variation to ensure minimum distance
-        let distance = baseDistance + distanceVariation
-        
-        // Calculate position with more vertical randomness
-        let xPosition = initialPos.x + sin(finalAngle) * distance
-        let zPosition = initialPos.z + cos(finalAngle) * distance
-        let yPosition = initialPos.y + Float.random(in: Float(-0.6)...Float(0.0)) // Increased vertical range
-        
-        return SCNVector3(xPosition, yPosition, zPosition)
-    }
-    
-    private func placeRandomUnusualObject() {
+    private func placeRandomUnusualObject(at position: SCNVector3) {
         guard let randomType = unusualItems.randomElement() else { return }
         guard let template = loadObjectTemplate(named: randomType)?.clone() else { return }
         
         template.name = randomType
         template.setValue("Unusual", forKey: "category")
-        
-        // Try to find a valid position for the unusual object
-        var position = calculateUnusualObjectPosition()
-        var attempts = 0
-        let maxAttempts = 10
-        
-        while isPositionTooCloseToExistingObjects(position) && attempts < maxAttempts {
-            position = calculateUnusualObjectPosition()
-            attempts += 1
-        }
-        
         template.position = position
         
-        // Add rotation animation with slower speed for unusual object
-        let rotation = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 3.0)
-        let repeatRotation = SCNAction.repeatForever(rotation)
+        // Add rotation animation
+        let rotationY = SCNAction.rotateBy(x: 0, y: CGFloat(2 * Double.pi), z: 0, duration: 10.0)
+        let rotationX = SCNAction.rotateBy(x: CGFloat(2 * Double.pi), y: 0, z: 0, duration: 10.0)
+        let combinedRotation = SCNAction.group([rotationY, rotationX])
+        let repeatRotation = SCNAction.repeatForever(combinedRotation)
         template.runAction(repeatRotation)
-        
+
         sceneView.scene.rootNode.addChildNode(template)
         unusualNode = template
-    }
-    
-    private func calculateUnusualObjectPosition() -> SCNVector3 {
-        guard let initialPos = initialCameraPosition,
-              let initialForward = initialCameraForward else {
-            return SCNVector3(0, 0, -0.8)
-        }
-        
-        // Place unusual object in the same arc as normal objects
-        let totalArc = Float.pi / 2 // 90 degrees total arc
-        let angleStep = totalArc / Float(maxObjects)
-        // Choose a random position between normal objects
-        let randomIndex = Int.random(in: 0...maxObjects)
-        let baseAngle = initialForward - totalArc/2 + angleStep * Float(randomIndex) // Center the arc around initial forward direction
-        
-        // Add some randomness to the angle but keep it within its segment
-        let randomAngleVariation = Float.random(in: -angleStep/4...angleStep/4)
-        let finalAngle = baseAngle + randomAngleVariation
-        
-        // Use a different distance range for unusual objects
-        let baseDistance = Float(1.7) // Further than normal objects
-        let distanceVariation = Float.random(in: 0.0...0.3) // Only positive variation
-        let distance = baseDistance + distanceVariation
-        
-        // Calculate position with more vertical randomness
-        let xPosition = initialPos.x + sin(finalAngle) * distance
-        let zPosition = initialPos.z + cos(finalAngle) * distance
-        let yPosition = initialPos.y + Float.random(in: Float(-0.6)...Float(0.0)) // Increased vertical range
-        
-        return SCNVector3(xPosition, yPosition, zPosition)
-    }
-    
-    private func isPositionTooCloseToExistingObjects(_ position: SCNVector3, minimumDistance: Float = 0.5) -> Bool {
-        // Check distance to all normal objects
-        for node in garageNodes {
-            let distance = calculateDistance(position, node.position)
-            if distance < minimumDistance {
-                return true
-            }
-        }
-        return false
-    }
-    
-    private func calculateDistance(_ point1: SCNVector3, _ point2: SCNVector3) -> Float {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        let dz = point1.z - point2.z
-        return sqrt(dx*dx + dy*dy + dz*dz)
     }
     
     private func loadObjectTemplate(named name: String) -> SCNNode? {
@@ -471,12 +442,21 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         
         let scale: Float = {
             switch name {
-            case "blender", "helmet", "basketball": return 0.001
-            case "stove", "laptop", "camera", "tire", "teapot", "handsoap": return 0.01
-            case "plate", "drill": return 0.03
-            case "toothbrush", "sink", "bucket", "meds": return 0.001
-            case "redbull", "wrench", "pipewrench": return 0.001
-            default: return 0.01
+            case "helmet", "basketball": return 0.002
+            case "blender": return 0.003
+            case "camera": return 0.007
+            case "tire"  : return 0.07
+            case "sink" : return 0.005
+            case "laptop": return 0.05
+            case "teapot": return 0.04
+            case "handsoap" : return 0.02
+            case "drill": return 0.03
+            case "plate": return 0.08
+            case "toothbrush", "meds": return 0.002
+            case "bucket": return 0.002
+            case "wrench", "pipewrench": return 0.003
+            case "redbull": return 0.002
+            default: return 0.02
             }
         }()
         
