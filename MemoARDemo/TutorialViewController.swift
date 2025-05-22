@@ -60,6 +60,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     /// Label displaying remaining time
     private var timerLabel: UILabel!
     
+    // Colors from HomeScreen
+    private let mainColor = UIColor(red: 0.95, green: 0.78, blue: 0.44, alpha: 1.0) // Soft Yellow
+    private let secondaryColor = UIColor(red: 0.69, green: 0.25, blue: 0.07, alpha: 1.0) // Dark Brown
+    private let backgroundColor = UIColor(red: 0.98, green: 0.97, blue: 0.93, alpha: 1.0) // Light cream
+    private let textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0) // Dark text
+    
     // MARK: - Game Variables
     
     /// Current score in the trial game
@@ -94,12 +100,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     // MARK: - Game Content
     
     /// Normal items specific to the kitchen theme
-    private let normalItems = ["blender", "stove", "plate", "teapot"]
+    private let normalItems = ["blender", "stove", "plate", "teapot", "redbull"]
     
     /// Unusual items that can appear in the game
-    private let unusualItems = ["helmet", "laptop", "camera", "tire", "basketball", "redbull", 
+    private let unusualItems = ["helmet", "laptop", "camera", "tire", "basketball",  
                                "wrench", "pipewrench", "drill", "toothbrush", "sink", "bucket", 
-                               "handsoap", "meds"]
+                                "meds"]
     
     /// Mapping of object names to Indonesian translations
     private let objectNameTranslations: [String: String] = [
@@ -133,10 +139,10 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         "Selamat datang di MemoAR! Ayo belajar cara berlatih.",
         "Dalam sesi latihan ini, kamu akan menemukan objek yang tidak biasa di sekitar kamu.",
         "Pertama-tama, kamu akan memilih tema dari objek-objek yang muncul. Untuk tutorial ini, mari gunakan tema Dapur terlebih dahulu",
-        "Lihat sekeliling kamu! Kamu akan melihat 4 objek yang sesuai dengan tema . Coba klik salah satu untuk melihat apa yang akan terjadi.",
+        "Lihat sekeliling kamu! Kamu akan melihat 4 objek yang umum di dapur. Coba klik salah satu untuk melihat apa yang akan terjadi.",
         "Sekarang, objek yang janggal muncul. Coba cari dan klik objek itu!",
         "Bagus! Kamu berhasil memilih objek yang tepat!",
-        "Dalam permainan, kamu perlu mencari objek yang janggal sebanyak mungkin dalam waktu 60 detik.",
+        "Dalam latihan, kamu perlu mencari objek yang janggal sebanyak mungkin dalam waktu 60 detik.",
         "Mari kita coba sesi latihan singkat selama 30 detik. Siap?",
         "Enjoy playing MemoAR!",
         "Sesi latihan selesai! Kamu berhasil menemukan %d objek yang tidak biasa!",
@@ -205,7 +211,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         // Create message box
         let messageBox = UIView()
         messageBox.translatesAutoresizingMaskIntoConstraints = false
-        messageBox.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        messageBox.backgroundColor = mainColor.withAlphaComponent(0.7)
         messageBox.layer.cornerRadius = 15
         view.addSubview(messageBox)
         
@@ -240,8 +246,10 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
-        messageLabel.textColor = .white
-        messageLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        messageLabel.textColor = textColor
+        messageLabel.font = UIFont(name: "Verdana", size: 20)
+        messageLabel.adjustsFontSizeToFitWidth = true
+        messageLabel.minimumScaleFactor = 0.8
     }
     
     /// Sets up the continue button
@@ -249,17 +257,20 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         continueButton = UIButton(type: .system)
         continueButton.translatesAutoresizingMaskIntoConstraints = false
         continueButton.setTitle("Lanjut", for: .normal)
-        continueButton.backgroundColor = .systemBlue
-        continueButton.setTitleColor(.white, for: .normal)
-        continueButton.layer.cornerRadius = 10
+        continueButton.backgroundColor = mainColor
+        continueButton.setTitleColor(secondaryColor, for: .normal)
+        continueButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 24)
+        continueButton.layer.cornerRadius = 16
+        continueButton.layer.borderWidth = 3
+        continueButton.layer.borderColor = secondaryColor.withAlphaComponent(0.6).cgColor
         continueButton.addTarget(self, action: #selector(continueTutorial), for: .touchUpInside)
         containerView.addSubview(continueButton)
         
         NSLayoutConstraint.activate([
             continueButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             continueButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            continueButton.widthAnchor.constraint(equalToConstant: 150),
-            continueButton.heightAnchor.constraint(equalToConstant: 50)
+            continueButton.widthAnchor.constraint(equalToConstant: 250),
+            continueButton.heightAnchor.constraint(equalToConstant: 65)
         ])
     }
     
@@ -268,9 +279,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         startTrialButton = UIButton(type: .system)
         startTrialButton.translatesAutoresizingMaskIntoConstraints = false
         startTrialButton.setTitle("Mulai Latihan", for: .normal)
-        startTrialButton.backgroundColor = .systemGreen
-        startTrialButton.setTitleColor(.white, for: .normal)
-        startTrialButton.layer.cornerRadius = 10
+        startTrialButton.backgroundColor = mainColor
+        startTrialButton.setTitleColor(secondaryColor, for: .normal)
+        startTrialButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 24)
+        startTrialButton.layer.cornerRadius = 16
+        startTrialButton.layer.borderWidth = 3
+        startTrialButton.layer.borderColor = secondaryColor.withAlphaComponent(0.6).cgColor
         startTrialButton.isHidden = true
         startTrialButton.addTarget(self, action: #selector(startTrialGame), for: .touchUpInside)
         containerView.addSubview(startTrialButton)
@@ -278,8 +292,8 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         NSLayoutConstraint.activate([
             startTrialButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             startTrialButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            startTrialButton.widthAnchor.constraint(equalToConstant: 150),
-            startTrialButton.heightAnchor.constraint(equalToConstant: 50)
+            startTrialButton.widthAnchor.constraint(equalToConstant: 250),
+            startTrialButton.heightAnchor.constraint(equalToConstant: 65)
         ])
     }
     
@@ -288,10 +302,10 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         scoreLabel = UILabel()
         scoreLabel.translatesAutoresizingMaskIntoConstraints = false
         scoreLabel.text = "Score: 0"
-        scoreLabel.textColor = .white
-        scoreLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        scoreLabel.textColor = textColor
+        scoreLabel.backgroundColor = mainColor
         scoreLabel.textAlignment = .center
-        scoreLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        scoreLabel.font = UIFont(name: "Verdana", size: 16)
         scoreLabel.layer.cornerRadius = 10
         scoreLabel.layer.masksToBounds = true
         scoreLabel.isHidden = true
@@ -310,10 +324,10 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         timerLabel = UILabel()
         timerLabel.translatesAutoresizingMaskIntoConstraints = false
         timerLabel.text = "Time: 30s"
-        timerLabel.textColor = .white
-        timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        timerLabel.textColor = textColor
+        timerLabel.backgroundColor = mainColor
         timerLabel.textAlignment = .center
-        timerLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        timerLabel.font = UIFont(name: "Verdana", size: 16)
         timerLabel.layer.cornerRadius = 10
         timerLabel.layer.masksToBounds = true
         timerLabel.isHidden = true
