@@ -58,6 +58,34 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
     private var timerSoundDuration: TimeInterval = 32.0
     private var lastTimerSoundTime: TimeInterval = 0
     
+    // Colors from HomeScreen
+    private let mainColor = UIColor(red: 0.95, green: 0.78, blue: 0.44, alpha: 1.0) // Soft Yellow
+    private let secondaryColor = UIColor(red: 0.69, green: 0.25, blue: 0.07, alpha: 1.0) // Dark Brown
+    private let backgroundColor = UIColor(red: 0.98, green: 0.97, blue: 0.93, alpha: 1.0) // Light cream
+    private let textColor = UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0) // Dark text
+    
+    // Add object name translations
+    private let objectNameTranslations: [String: String] = [
+        "blender": "Blender",
+        "stove": "Kompor",
+        "plate": "Piring",
+        "teapot": "Cerek",
+        "helmet": "Helm",
+        "laptop": "Laptop",
+        "camera": "Kamera",
+        "tire": "Ban",
+        "basketball": "Bola Basket",
+        "redbull": "Minuman Kaleng",
+        "wrench": "Kunci Inggris",
+        "pipewrench": "Kunci Pipa",
+        "drill": "Bor",
+        "toothbrush": "Sikat Gigi",
+        "sink": "Wastafel",
+        "bucket": "Ember",
+        "handsoap": "Botol Sabun",
+        "meds": "Obat"
+    ]
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -98,9 +126,10 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         // Score Label
         scoreLabel = UILabel()
         scoreLabel.text = "Score: 0"
-        scoreLabel.textColor = .white
-        scoreLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        scoreLabel.textColor = textColor
+        scoreLabel.backgroundColor = mainColor
         scoreLabel.textAlignment = .center
+        scoreLabel.font = UIFont(name: "Verdana", size: 16)
         scoreLabel.layer.cornerRadius = 10
         scoreLabel.layer.masksToBounds = true
         scoreLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -109,9 +138,10 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         // Timer Label
         timerLabel = UILabel()
         timerLabel.text = "Time: 60s"
-        timerLabel.textColor = .white
-        timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        timerLabel.textColor = textColor
+        timerLabel.backgroundColor = mainColor
         timerLabel.textAlignment = .center
+        timerLabel.font = UIFont(name: "Verdana", size: 16)
         timerLabel.layer.cornerRadius = 10
         timerLabel.layer.masksToBounds = true
         timerLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -119,10 +149,13 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         
         // Start Button
         startButton = UIButton(type: .system)
-        startButton.setTitle("Start Game", for: .normal)
-        startButton.backgroundColor = UIColor.systemGreen
-        startButton.setTitleColor(.white, for: .normal)
-        startButton.layer.cornerRadius = 10
+        startButton.setTitle("Mulai Bermain", for: .normal)
+        startButton.backgroundColor = mainColor
+        startButton.setTitleColor(secondaryColor, for: .normal)
+        startButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 24)
+        startButton.layer.cornerRadius = 16
+        startButton.layer.borderWidth = 3
+        startButton.layer.borderColor = secondaryColor.withAlphaComponent(0.6).cgColor
         startButton.translatesAutoresizingMaskIntoConstraints = false
         startButton.addTarget(self, action: #selector(startGame), for: .touchUpInside)
         view.addSubview(startButton)
@@ -141,8 +174,8 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
             
             startButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            startButton.widthAnchor.constraint(equalToConstant: 150),
-            startButton.heightAnchor.constraint(equalToConstant: 50)
+            startButton.widthAnchor.constraint(equalToConstant: 250),
+            startButton.heightAnchor.constraint(equalToConstant: 65)
         ])
     }
     
@@ -502,12 +535,14 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
                 showFloatingText(at: tapLocation, text: "+1", color: .green)
                 placeGameObjects()
             } else {
-                let objectName = hitNode.name ?? "object"
-                triggerHapticFeedback(style: .medium)
-                // Play wrong sound
-                wrongSoundPlayer?.currentTime = 0
-                wrongSoundPlayer?.play()
-                showAlert(title: "Incorrect", message: "That's a normal kitchen object!")
+                if let name = objectName {
+                    let indonesianName = getIndonesianName(for: name)
+                    triggerHapticFeedback(style: .medium)
+                    // Play wrong sound
+                    wrongSoundPlayer?.currentTime = 0
+                    wrongSoundPlayer?.play()
+                    showAlert(title: "Salah", message: "\(indonesianName) adalah barang normal di dapur!")
+                }
             }
         }
     }
@@ -517,6 +552,23 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
         let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
         alertController.addAction(okAction)
+        
+        // Configure alert appearance
+        let attributedTitle = NSAttributedString(
+            string: title,
+            attributes: [
+                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20)
+            ]
+        )
+        let attributedMessage = NSAttributedString(
+            string: "\n" + message,  // Add newline for spacing
+            attributes: [
+                .font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)
+            ]
+        )
+        
+        alertController.setValue(attributedTitle, forKey: "attributedTitle")
+        alertController.setValue(attributedMessage, forKey: "attributedMessage")
         
         DispatchQueue.main.async {
             self.present(alertController, animated: true, completion: nil)
@@ -547,5 +599,10 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         }) { _ in
             label.removeFromSuperview()
         }
+    }
+    
+    // Add helper function to get Indonesian name
+    private func getIndonesianName(for objectName: String) -> String {
+        return objectNameTranslations[objectName] ?? objectName
     }
 } 

@@ -13,30 +13,30 @@ struct GameOverSwiftUIView: View {
 
     // Consistent colors
     let backgroundColor = Color(red: 0.98, green: 0.97, blue: 0.93) // Light cream
-    let buttonColor = Color(red: 0.95, green: 0.69, blue: 0.26)     // Orange
-    let buttonTextColor = Color(red: 0.4, green: 0.2, blue: 0.1)    // Dark Brown
-    let textColor = Color(red: 0.2, green: 0.2, blue: 0.2)          // Dark text
+    let mainColor = Color(red: 0.95, green: 0.78, blue: 0.44) // Soft Yellow
+    let secondaryColor = Color(red: 0.69, green: 0.25, blue: 0.07) // Dark Brown
+    let textColor = Color(red: 0.2, green: 0.2, blue: 0.2) // Dark text
 
     var body: some View {
         ZStack {
             backgroundColor.edgesIgnoringSafeArea(.all)
-            VStack(spacing: 25) { // Adjusted spacing
+            VStack(spacing: 25) {
                 Text(themeTitle)
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.custom("verdana-bold", size: 36))
                     .foregroundColor(textColor)
                     .padding(.top, 60)
 
                 Spacer()
 
                 Text("Halo \(userName)!")
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.custom("verdana", size: 24))
                     .foregroundColor(textColor)
 
                 Text("Poin kamu:")
-                    .font(.system(size: 22, weight: .regular))
+                    .font(.custom("verdana", size: 22))
                     .foregroundColor(textColor)
                 Text("\(score)")
-                    .font(.system(size: 48, weight: .bold))
+                    .font(.custom("verdana-bold", size: 48))
                     .foregroundColor(textColor)
                     .padding(.bottom, 30)
                 
@@ -48,13 +48,13 @@ struct GameOverSwiftUIView: View {
                         presentationMode.wrappedValue.dismiss()
                         onTryAgain()
                     }
-                    .modifier(GameOverButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor, flexibleWidth: true))
+                    .modifier(GameOverButtonModifier(backgroundColor: mainColor, textColor: secondaryColor, flexibleWidth: true))
 
                     Button("Pilih Tema") {
                         presentationMode.wrappedValue.dismiss()
                         onSelectTheme()
                     }
-                    .modifier(GameOverButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor, flexibleWidth: true))
+                    .modifier(GameOverButtonModifier(backgroundColor: mainColor, textColor: secondaryColor, flexibleWidth: true))
                 }
                 .padding(.horizontal, 20)
 
@@ -62,9 +62,9 @@ struct GameOverSwiftUIView: View {
                     presentationMode.wrappedValue.dismiss()
                     onShowHistory()
                 }
-                .modifier(GameOverButtonModifier(backgroundColor: buttonColor, textColor: buttonTextColor, flexibleWidth: false))
-                .padding(.horizontal, 20) // Match horizontal padding for the single button
-                .padding(.top, 10) // Add some space above the single button
+                .modifier(GameOverButtonModifier(backgroundColor: mainColor, textColor: secondaryColor, flexibleWidth: false))
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
 
                 Spacer()
                 Spacer()
@@ -83,11 +83,11 @@ struct GameOverButtonModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(.system(size: 18, weight: .semibold))
+            .font(.custom("verdana-bold", size: 18))
             .padding(.vertical, 12)
             .padding(.horizontal, 10)
             .frame(maxWidth: flexibleWidth ? .infinity : nil)
-            .frame(height: 55) // Adjusted height
+            .frame(height: 55)
             .background(backgroundColor)
             .foregroundColor(textColor)
             .cornerRadius(12)
