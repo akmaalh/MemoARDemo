@@ -45,6 +45,7 @@ struct HistoryView: View {
             List {
                 if dataManager.gameHistory.isEmpty {
                     Text("Belum ada riwayat permainan") // Indonesian text
+                        .font(.system(size: 20))
                         .foregroundColor(secondaryTextColor)
                         .italic()
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -55,22 +56,21 @@ struct HistoryView: View {
                         VStack(alignment: .leading, spacing: 6) { // Slightly increased spacing
                             HStack {
                                 Text(record.userName)
-                                    .font(.headline)
+                                    .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(primaryTextColor)
                                 Spacer()
                                 Text("Skor: \(record.score)") // Indonesian text
-                                    .font(.headline)
+                                    .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(scoreColor)
                             }
                             
                             HStack {
-                                Text(record.theme)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                                Text(getIndonesianThemeName(record.theme))
+                                    .font(.system(size: 18, weight: .medium))
                                     .foregroundColor(themeColor)
                                 Spacer()
                                 Text(formatDate(record.date))
-                                    .font(.caption) // Made date slightly smaller
+                                    .font(.system(size: 18))
                                     .foregroundColor(secondaryTextColor)
                             }
                         }
@@ -88,7 +88,7 @@ struct HistoryView: View {
                         dataManager.clearHistory()
                     } label: {
                         Text("Hapus") // Indonesian text
-                            .font(.headline)
+                            .font(.system(size: 20, weight: .bold))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .foregroundColor(clearButtonTextColor)
@@ -106,5 +106,26 @@ struct HistoryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+    
+    private func getIndonesianThemeName(_ theme: String) -> String {
+        switch theme.lowercased() {
+        case "kitchen":
+            return "Dapur"
+        case "bathroom":
+            return "Kamar Mandi"
+        case "garage":
+            return "Garasi"
+        default:
+            return theme
+        }
+    }
+}
+
+// MARK: - Preview Provider
+struct HistoryView_Previews: PreviewProvider {
+    static var previews: some View {
+        HistoryView()
+            .environmentObject(GameDataManager())
     }
 }

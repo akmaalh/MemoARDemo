@@ -157,7 +157,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         
         // Start Button
         startButton = UIButton(type: .system)
-        startButton.setTitle("Mulai Bermain", for: .normal)
+        startButton.setTitle("Mulai Latihan", for: .normal)
         startButton.backgroundColor = mainColor
         startButton.setTitleColor(secondaryColor, for: .normal)
         startButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 24)
@@ -413,7 +413,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         selectRandomPositionSet()
         
         // Create a copy of positions and shuffle them
-        var availablePositions = currentPositionSet
+        let availablePositions = currentPositionSet
         
         // Randomly select which position will have the unusual object
         let unusualObjectIndex = Int.random(in: 0..<5)
@@ -559,24 +559,39 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     private func showAlert(title: String, message: String) {
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
         let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        
+        // Style the OK button
+        okAction.setValue(secondaryColor, forKey: "titleTextColor")
         alertController.addAction(okAction)
         
         // Configure alert appearance
         let attributedTitle = NSAttributedString(
             string: title,
             attributes: [
-                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20)
+                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20),
+                .foregroundColor: textColor
             ]
         )
         let attributedMessage = NSAttributedString(
-            string: "\n" + message,  // Add newline for spacing
+            string: message,
             attributes: [
-                .font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)
+                .font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18),
+                .foregroundColor: textColor
             ]
         )
         
         alertController.setValue(attributedTitle, forKey: "attributedTitle")
         alertController.setValue(attributedMessage, forKey: "attributedMessage")
+        
+        // Style the alert view
+        if let alertView = alertController.view {
+            alertView.backgroundColor = mainColor
+            alertView.layer.cornerRadius = 15
+            alertView.layer.masksToBounds = true
+        }
+        
+        // Set modal presentation style to prevent background dimming
+        alertController.modalPresentationStyle = .overFullScreen
         
         DispatchQueue.main.async {
             self.present(alertController, animated: true, completion: nil)

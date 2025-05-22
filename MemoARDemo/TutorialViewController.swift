@@ -138,7 +138,8 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     private let tutorialSteps = [
         "Selamat datang di MemoAR! Ayo belajar cara berlatih.",
         "Dalam sesi latihan ini, kamu akan menemukan objek yang tidak biasa di sekitar kamu.",
-        "Pertama-tama, kamu akan memilih tema dari objek-objek yang muncul. Untuk tutorial ini, mari gunakan tema Dapur terlebih dahulu",
+        "Pertama-tama, kamu akan memilih tema dari objek-objek yang muncul.",
+        "Untuk tutorial ini, mari gunakan tema Dapur terlebih dahulu",
         "Lihat sekeliling kamu! Kamu akan melihat 4 objek yang umum di dapur. Coba klik salah satu untuk melihat apa yang akan terjadi.",
         "Sekarang, objek yang janggal muncul. Coba cari dan klik objek itu!",
         "Bagus! Kamu berhasil memilih objek yang tepat!",
@@ -437,26 +438,26 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         messageLabel.text = tutorialSteps[currentStep]
         
         switch currentStep {
-        case 3:
+        case 4:
             generateNormalObjects()
             continueButton.isEnabled = false
             startTrialButton.isHidden = true
             continueButton.isHidden = false
             containerView.isHidden = false
-        case 4:
+        case 5:
             generateUnusualObject()
             continueButton.isEnabled = false
             startTrialButton.isHidden = true
             continueButton.isHidden = true  // Hide continue button until correct object is tapped
             containerView.isHidden = false
-        case 7:
+        case 8:
             // Show start trial button instead of continue button
             continueButton.isHidden = true
             startTrialButton.isHidden = false
             containerView.isHidden = false
-        case 8:
-            startTrialGame()
         case 9:
+            startTrialGame()
+        case 10:
             // Show final message with continue button
             continueButton.setTitle("Halaman Utama", for: .normal)
             continueButton.isHidden = false
@@ -531,13 +532,13 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         // Show message container with score
         containerView.isHidden = false
         messageLabel.superview?.isHidden = false  // Show the message box
-        messageLabel.text = String(format: tutorialSteps[9], score)
+        messageLabel.text = String(format: tutorialSteps[10], score)
         continueButton.setTitle("Lanjut", for: .normal)
         continueButton.isHidden = false
         continueButton.isEnabled = true
         
-        // Set current step to 9 to ensure proper dismissal
-        currentStep = 9
+        // Set current step to 10 to ensure proper dismissal
+        currentStep = 10
     }
     
     /// Updates the game timer
@@ -680,7 +681,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         
         selectRandomPositionSet()
         
-        var availablePositions = currentPositionSet
+        let availablePositions = currentPositionSet
         let unusualObjectIndex = Int.random(in: 0..<5)
         
         for i in 0..<5 {
@@ -832,19 +833,28 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                     showCurrentStep()
                 }
             } else {
-                wrongSoundPlayer?.currentTime = 0
-                wrongSoundPlayer?.play()
-                
-                if currentStep == 3 {
+                if currentStep == 4 {
                     if let name = objectName {
+                        foundSoundPlayer?.currentTime = 0
+                        foundSoundPlayer?.play()
                         let indonesianName = getIndonesianName(for: name)
                         messageLabel.text = "Benar! Ini adalah \(indonesianName), objek normal di dapur."
                         continueButton.isEnabled = true
                     }
                 } else if isGameActive {
-                    showAlert(title: "Salah", message: "Itu adalah objek normal di dapur!")
+                    wrongSoundPlayer?.currentTime = 0
+                    wrongSoundPlayer?.play()
+                    if let name = objectName {
+                        let indonesianName = getIndonesianName(for: name)
+                        showAlert(title: "Salah", message: "\(indonesianName) adalah objek normal di dapur!")
+                    }
                 } else {
-                    showAlert(title: "Salah", message: "Itu adalah objek normal di dapur!")
+                    wrongSoundPlayer?.currentTime = 0
+                    wrongSoundPlayer?.play()
+                    if let name = objectName {
+                        let indonesianName = getIndonesianName(for: name)
+                        showAlert(title: "Salah", message: "\(indonesianName) adalah objek normal di dapur!")
+                    }
                 }
             }
         }
@@ -852,12 +862,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     
     /// Continues to the next tutorial step
     @objc private func continueTutorial() {
-        if currentStep == 9 {
+        if currentStep == 10 {
             // Show final message with home button
-            messageLabel.text = tutorialSteps[10]
+            messageLabel.text = tutorialSteps[11]
             continueButton.setTitle("Halaman Utama", for: .normal)
-            currentStep = 10
-        } else if currentStep == 10 {
+            currentStep = 11
+        } else if currentStep == 11 {
             // Use the callback to navigate back to home screen
             requestSelectThemeHandler?()
         } else {
@@ -888,12 +898,81 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     
     /// Shows an alert with the specified title and message
     private func showAlert(title: String, message: String) {
-        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-        alertController.addAction(okAction)
+        // Create custom alert view
+        let alertView = UIView()
+        alertView.backgroundColor = mainColor
+        alertView.layer.cornerRadius = 15
+        alertView.translatesAutoresizingMaskIntoConstraints = false
         
-        DispatchQueue.main.async {
-            self.present(alertController, animated: true, completion: nil)
+        // Create title label
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.textColor = textColor
+        titleLabel.font = UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Create message label
+        let messageLabel = UILabel()
+        messageLabel.text = message
+        messageLabel.textColor = textColor
+        messageLabel.font = UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)
+        messageLabel.textAlignment = .center
+        messageLabel.numberOfLines = 0
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Create OK button
+        let okButton = UIButton(type: .system)
+        okButton.setTitle("OK", for: .normal)
+        okButton.setTitleColor(secondaryColor, for: .normal)
+        okButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18)
+        okButton.translatesAutoresizingMaskIntoConstraints = false
+        okButton.addTarget(self, action: #selector(dismissAlert(_:)), for: .touchUpInside)
+        
+        // Add subviews
+        alertView.addSubview(titleLabel)
+        alertView.addSubview(messageLabel)
+        alertView.addSubview(okButton)
+        view.addSubview(alertView)
+        
+        // Set up constraints
+        NSLayoutConstraint.activate([
+            alertView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            alertView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            alertView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8),
+            
+            titleLabel.topAnchor.constraint(equalTo: alertView.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: alertView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: alertView.trailingAnchor, constant: -20),
+            
+            messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+            messageLabel.leadingAnchor.constraint(equalTo: alertView.leadingAnchor, constant: 20),
+            messageLabel.trailingAnchor.constraint(equalTo: alertView.trailingAnchor, constant: -20),
+            
+            okButton.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: 20),
+            okButton.leadingAnchor.constraint(equalTo: alertView.leadingAnchor),
+            okButton.trailingAnchor.constraint(equalTo: alertView.trailingAnchor),
+            okButton.bottomAnchor.constraint(equalTo: alertView.bottomAnchor),
+            okButton.heightAnchor.constraint(equalToConstant: 44) // Standard touch target height
+        ])
+        
+        // Add animation
+        alertView.alpha = 0
+        alertView.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+        UIView.animate(withDuration: 0.3) {
+            alertView.alpha = 1
+            alertView.transform = .identity
+        }
+    }
+    
+    @objc private func dismissAlert(_ sender: UIButton) {
+        if let alertView = sender.superview {
+            UIView.animate(withDuration: 0.3, animations: {
+                alertView.alpha = 0
+                alertView.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+            }) { _ in
+                alertView.removeFromSuperview()
+            }
         }
     }
 }
