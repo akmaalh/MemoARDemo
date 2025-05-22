@@ -681,7 +681,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         
         selectRandomPositionSet()
         
-        var availablePositions = currentPositionSet
+        let availablePositions = currentPositionSet
         let unusualObjectIndex = Int.random(in: 0..<5)
         
         for i in 0..<5 {

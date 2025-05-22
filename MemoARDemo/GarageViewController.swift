@@ -413,7 +413,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         selectRandomPositionSet()
         
         // Create a copy of positions and shuffle them
-        var availablePositions = currentPositionSet
+        let availablePositions = currentPositionSet
         
         // Randomly select which position will have the unusual object
         let unusualObjectIndex = Int.random(in: 0..<5)
