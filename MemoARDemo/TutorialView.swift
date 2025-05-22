@@ -2,34 +2,25 @@ import SwiftUI
 
 struct TutorialView: View {
     @Environment(\.presentationMode) var presentationMode
-    @State private var navigateToHome = false
     
     var body: some View {
-        ZStack {
-            TutorialViewControllerRepresentable(navigateToHome: $navigateToHome)
-                .edgesIgnoringSafeArea(.all)
-            
-            NavigationLink(
-                destination: HomeScreen(),
-                isActive: $navigateToHome,
-                label: { EmptyView() }
-            )
-        }
+        TutorialViewControllerRepresentable(onSelectTheme: {
+            presentationMode.wrappedValue.dismiss()
+        })
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
 struct TutorialViewControllerRepresentable: UIViewControllerRepresentable {
-    @Binding var navigateToHome: Bool
+    var onSelectTheme: () -> Void
     
     func makeUIViewController(context: Context) -> TutorialViewController {
         let controller = TutorialViewController()
-        controller.onNavigateToHome = {
-            navigateToHome = true
-        }
+        controller.requestSelectThemeHandler = onSelectTheme
         return controller
     }
     
     func updateUIViewController(_ uiViewController: TutorialViewController, context: Context) {
-        // Update if needed
+        uiViewController.requestSelectThemeHandler = onSelectTheme
     }
 }

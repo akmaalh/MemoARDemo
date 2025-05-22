@@ -11,7 +11,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     // MARK: - Properties
     
     /// Callback for navigation to home screen
-    var onNavigateToHome: (() -> Void)?
+    var requestSelectThemeHandler: (() -> Void)?
     
     /// The AR scene view that displays the AR content
     var sceneView: ARSCNView!
@@ -112,14 +112,14 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         "camera": "Kamera",
         "tire": "Ban",
         "basketball": "Bola Basket",
-        "redbull": "Red Bull",
+        "redbull": "Minuman Kaleng",
         "wrench": "Kunci Inggris",
         "pipewrench": "Kunci Pipa",
         "drill": "Bor",
         "toothbrush": "Sikat Gigi",
         "sink": "Wastafel",
         "bucket": "Ember",
-        "handsoap": "Sabun Cuci Tangan",
+        "handsoap": "Botol Sabun",
         "meds": "Obat"
     ]
     
@@ -136,8 +136,8 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         "Lihat sekeliling kamu! Kamu akan melihat 4 objek yang sesuai dengan tema . Coba klik salah satu untuk melihat apa yang akan terjadi.",
         "Sekarang, objek yang janggal muncul. Coba cari dan klik objek itu!",
         "Bagus! Kamu berhasil memilih objek yang tepat!",
-        "Dalam permainan, kamu perlu mengidentifikasi objek yang tidak biasa sebanyak mungkin dalam waktu 60 detik.",
-        "Mari kita coba sesi latihan singkat. Siap?",
+        "Dalam permainan, kamu perlu mencari objek yang janggal sebanyak mungkin dalam waktu 60 detik.",
+        "Mari kita coba sesi latihan singkat selama 30 detik. Siap?",
         "Enjoy playing MemoAR!",
         "Sesi latihan selesai! Kamu berhasil menemukan %d objek yang tidak biasa!",
         "Sekarang kamu siap untuk bermain! Kembali ke halaman utama untuk memulai permainan."
@@ -184,22 +184,54 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     
     /// Sets up the user interface elements
     private func setupUI() {
-        setupContainerView()
+        // First create all UI elements
         setupMessageLabel()
+        setupContainerView()
         setupContinueButton()
         setupStartTrialButton()
         setupScoreLabel()
         setupTimerLabel()
-        setupConstraints()
     }
     
     /// Sets up the container view for tutorial UI
     private func setupContainerView() {
+        // Create container for buttons
         containerView = UIView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        containerView.backgroundColor = .clear  // Make container background transparent
         containerView.layer.cornerRadius = 15
         view.addSubview(containerView)
+        
+        // Create message box
+        let messageBox = UIView()
+        messageBox.translatesAutoresizingMaskIntoConstraints = false
+        messageBox.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        messageBox.layer.cornerRadius = 15
+        view.addSubview(messageBox)
+        
+        // Add message label to message box
+        messageBox.addSubview(messageLabel)
+        
+        // Update constraints
+        NSLayoutConstraint.activate([
+            // Message box constraints - position it below the score/timer labels
+            messageBox.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 80),
+            messageBox.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            messageBox.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            messageBox.heightAnchor.constraint(equalToConstant: 120),
+            
+            // Message label constraints within message box
+            messageLabel.topAnchor.constraint(equalTo: messageBox.topAnchor, constant: 15),
+            messageLabel.leadingAnchor.constraint(equalTo: messageBox.leadingAnchor, constant: 15),
+            messageLabel.trailingAnchor.constraint(equalTo: messageBox.trailingAnchor, constant: -15),
+            messageLabel.bottomAnchor.constraint(equalTo: messageBox.bottomAnchor, constant: -15),
+            
+            // Container view constraints (for buttons)
+            containerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            containerView.heightAnchor.constraint(equalToConstant: 80)
+        ])
     }
     
     /// Sets up the message label
@@ -210,7 +242,6 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         messageLabel.numberOfLines = 0
         messageLabel.textColor = .white
         messageLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        containerView.addSubview(messageLabel)
     }
     
     /// Sets up the continue button
@@ -223,6 +254,13 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         continueButton.layer.cornerRadius = 10
         continueButton.addTarget(self, action: #selector(continueTutorial), for: .touchUpInside)
         containerView.addSubview(continueButton)
+        
+        NSLayoutConstraint.activate([
+            continueButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            continueButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            continueButton.widthAnchor.constraint(equalToConstant: 150),
+            continueButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
     }
     
     /// Sets up the start trial button
@@ -236,6 +274,13 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         startTrialButton.isHidden = true
         startTrialButton.addTarget(self, action: #selector(startTrialGame), for: .touchUpInside)
         containerView.addSubview(startTrialButton)
+        
+        NSLayoutConstraint.activate([
+            startTrialButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            startTrialButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            startTrialButton.widthAnchor.constraint(equalToConstant: 150),
+            startTrialButton.heightAnchor.constraint(equalToConstant: 50)
+        ])
     }
     
     /// Sets up the score label
@@ -246,10 +291,18 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         scoreLabel.textColor = .white
         scoreLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         scoreLabel.textAlignment = .center
+        scoreLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         scoreLabel.layer.cornerRadius = 10
         scoreLabel.layer.masksToBounds = true
         scoreLabel.isHidden = true
         view.addSubview(scoreLabel)
+        
+        NSLayoutConstraint.activate([
+            scoreLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            scoreLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            scoreLabel.widthAnchor.constraint(equalToConstant: 100),
+            scoreLabel.heightAnchor.constraint(equalToConstant: 40)
+        ])
     }
     
     /// Sets up the timer label
@@ -260,10 +313,18 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         timerLabel.textColor = .white
         timerLabel.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         timerLabel.textAlignment = .center
+        timerLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         timerLabel.layer.cornerRadius = 10
         timerLabel.layer.masksToBounds = true
         timerLabel.isHidden = true
         view.addSubview(timerLabel)
+        
+        NSLayoutConstraint.activate([
+            timerLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            timerLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            timerLabel.widthAnchor.constraint(equalToConstant: 100),
+            timerLabel.heightAnchor.constraint(equalToConstant: 40)
+        ])
     }
     
     /// Sets up the UI constraints
@@ -372,7 +433,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
             generateUnusualObject()
             continueButton.isEnabled = false
             startTrialButton.isHidden = true
-            continueButton.isHidden = false
+            continueButton.isHidden = true  // Hide continue button until correct object is tapped
             containerView.isHidden = false
         case 7:
             // Show start trial button instead of continue button
@@ -415,7 +476,8 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         // Show game UI, hide tutorial UI
         scoreLabel.isHidden = false
         timerLabel.isHidden = false
-        containerView.isHidden = true
+        containerView.isHidden = true  // Hide the button container
+        messageLabel.superview?.isHidden = true  // Hide the message box
         continueButton.isHidden = true
         startTrialButton.isHidden = true
         
@@ -448,17 +510,17 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         
         timerSoundPlayer?.stop()
         
-        // Show score message
-        messageLabel.text = String(format: tutorialSteps[9], score)
-        continueButton.setTitle("Halaman Utama", for: .normal)
-        continueButton.isHidden = false
-        containerView.isHidden = false
-        continueButton.isEnabled = true
-        
         // Hide game UI
         scoreLabel.isHidden = true
         timerLabel.isHidden = true
-        startTrialButton.isHidden = true
+        
+        // Show message container with score
+        containerView.isHidden = false
+        messageLabel.superview?.isHidden = false  // Show the message box
+        messageLabel.text = String(format: tutorialSteps[9], score)
+        continueButton.setTitle("Lanjut", for: .normal)
+        continueButton.isHidden = false
+        continueButton.isEnabled = true
         
         // Set current step to 9 to ensure proper dismissal
         currentStep = 9
@@ -745,6 +807,13 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                     placeGameObjects()
                 } else {
                     showFloatingText(at: location, text: "Benar!", color: .green)
+                    // Clear all objects after successful identification
+                    tutorialObjects.forEach { $0.removeFromParentNode() }
+                    tutorialObjects.removeAll()
+                    unusualNode?.removeFromParentNode()
+                    unusualNode = nil
+                    // Show continue button after correct object is tapped
+                    continueButton.isHidden = false
                     currentStep += 1
                     showCurrentStep()
                 }
@@ -770,8 +839,13 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     /// Continues to the next tutorial step
     @objc private func continueTutorial() {
         if currentStep == 9 {
-            // Navigate to HomeScreen using SwiftUI navigation
-            onNavigateToHome?()
+            // Show final message with home button
+            messageLabel.text = tutorialSteps[10]
+            continueButton.setTitle("Halaman Utama", for: .normal)
+            currentStep = 10
+        } else if currentStep == 10 {
+            // Use the callback to navigate back to home screen
+            requestSelectThemeHandler?()
         } else {
             currentStep += 1
             showCurrentStep()
