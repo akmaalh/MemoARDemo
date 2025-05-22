@@ -36,15 +36,16 @@ struct HomeScreen: View {
                         .foregroundColor(textColor)
 
                     // Greeting
-                    Text("Halo \(userName)!")
+                    Text("Halo, \(userName)!")
                         .font(.custom("verdana-bold", size: 35))
                         .fontWeight(.bold)
                         .foregroundColor(textColor)
                         .padding(.top, 20)
 
-                    Text("Latih memorimu sekarang!")
+                    Text("mainkan memoAR untuk tingkatkan memorimu!")
                         .font(.custom("verdana", size: 20))
                         .foregroundColor(textColor)
+                        .multilineTextAlignment(.center)
                         .padding(.bottom, 30)
 
                     NavigationLink(destination: GameView(showHistory: false).environmentObject(dataManager)) {
@@ -58,17 +59,17 @@ struct HomeScreen: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(secondaryColor.opacity(0.6), lineWidth: 3)
                         )
-                        .accessibilityLabel("Mulai Latihan")
+                        .accessibilityLabel("Mulai Permainan")
                     }
 
                     NavigationLink(destination: GameView(showHistory: true).environmentObject(dataManager)) {
                         HStack {
-                            Image(systemName: "clock.arrow.circlepath")
+                            Image(systemName: "list.bullet.rectangle")
                                 .font(.system(size: 24))
-                            Text("Histori Nilai")
+                            Text("Histori Poin")
                         }
                         .modifier(MainButtonModifier(backgroundColor: mainColor, textColor: secondaryColor, fontSize: 24, isBold: true))
-                        .accessibilityLabel("Histori Nilai")
+                        .accessibilityLabel("Histori Poin")
                     }
 
                     NavigationLink(destination: TutorialView().environmentObject(dataManager)) {
