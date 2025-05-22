@@ -1,13 +1,19 @@
 import SwiftUI
+import UIKit
 
 struct TutorialView: View {
     @Environment(\.presentationMode) var presentationMode
+    var onComplete: (() -> Void)? = nil
     
     var body: some View {
         TutorialViewControllerRepresentable(onSelectTheme: {
-            presentationMode.wrappedValue.dismiss()
+            if let onComplete = onComplete {
+                onComplete()
+            } else {
+                presentationMode.wrappedValue.dismiss()
+            }
         })
-        .edgesIgnoringSafeArea(.all)
+        .ignoresSafeArea()
     }
 }
 

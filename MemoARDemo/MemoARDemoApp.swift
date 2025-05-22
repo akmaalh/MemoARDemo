@@ -11,19 +11,32 @@ import SwiftUI
 struct MemoARDemoApp: App {
     @StateObject private var dataManager = GameDataManager()
     @State private var showUserForm = false
+    @State private var showTutorial = false
     
     var body: some Scene {
         WindowGroup {
             ZStack {
                 HomeScreen()
                     .environmentObject(dataManager)
+                    .opacity((showUserForm || showTutorial) ? 0 : 1)
                 
                 if showUserForm {
                     UserFormView(onUserCreated: {
                         withAnimation {
                             showUserForm = false
+                            showTutorial = true
                         }
                     })
+                    .environmentObject(dataManager)
+                    .transition(.opacity)
+                }
+                
+                if showTutorial {
+                    TutorialView() {
+                        withAnimation {
+                            showTutorial = false
+                        }
+                    }
                     .environmentObject(dataManager)
                     .transition(.opacity)
                 }

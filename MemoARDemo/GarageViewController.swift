@@ -326,11 +326,15 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
     
     private func showCustomGameOverUI() {
         self.gameSaveHandler?()
+        // TODO: Implement actual high score fetching logic
+        let highScore = getHighScoreForCurrentTheme()
+        let isNewHighScore = self.score > highScore
 
         let gameOverView = GameOverSwiftUIView(
             themeTitle: self.themeDisplayName,
             userName: self.userName,
             score: self.score,
+            isNewHighScore: isNewHighScore, // Pass the new high score status
             onTryAgain: {
                 self.startGame()
             },
@@ -352,6 +356,14 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
             }
             self.startButton.isHidden = false
         }
+    }
+    
+    // MARK: - High Score (Placeholder)
+    // TODO: Implement logic to retrieve the actual high score for the current theme
+    private func getHighScoreForCurrentTheme() -> Int {
+        // For now, returning 0. Replace this with actual high score fetching.
+        // Example: UserDefaults.standard.integer(forKey: "\(themeDisplayName)_highScore")
+        return 0
     }
     
     // MARK: - Object Placement
@@ -540,7 +552,7 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
                 // Play found sound
                 foundSoundPlayer?.currentTime = 0
                 foundSoundPlayer?.play()
-                showFloatingText(at: tapLocation, text: "+1", color: .green)
+                showCorrectBadge(at: tapLocation)
                 placeGameObjects()
             } else {
                 if let name = objectName {
@@ -607,20 +619,22 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         }
     }
     
-    private func showFloatingText(at position: CGPoint, text: String, color: UIColor) {
-        let label = UILabel()
-        label.text = text
-        label.textColor = color
-        label.font = UIFont.boldSystemFont(ofSize: 24)
-        label.sizeToFit()
-        label.center = position
-        view.addSubview(label)
+    private func showCorrectBadge(at position: CGPoint) {
+        guard let badgeImage = UIImage(named: "correct-badge") else {
+            print("Error: Could not load correct-badge image.")
+            // Fallback to old text behavior or do nothing
+            return
+        }
+        let imageView = UIImageView(image: badgeImage)
+        imageView.frame.size = CGSize(width: 153.5, height: 50) // Adjust size as needed
+        imageView.center = position
+        view.addSubview(imageView)
         
         UIView.animate(withDuration: 0.8, animations: {
-            label.alpha = 0
-            label.center.y -= 50
+            imageView.alpha = 0
+            imageView.center.y -= 50
         }) { _ in
-            label.removeFromSuperview()
+            imageView.removeFromSuperview()
         }
     }
     
