@@ -33,6 +33,8 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
     private var scoreLabel: UILabel!
     private var timerLabel: UILabel!
     private var startButton: UIButton!
+    private var instructionLabel: UILabel!
+    private var instructionContainer: UIView!
     
     // Haptic feedback
     private var hapticFeedbackGenerator: UIImpactFeedbackGenerator?
@@ -147,6 +149,39 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
         timerLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(timerLabel)
         
+        // Instruction Label with Container for Padding
+        instructionContainer = UIView()
+        instructionContainer.backgroundColor = mainColor.withAlphaComponent(0.9)
+        instructionContainer.layer.cornerRadius = 12
+        instructionContainer.layer.masksToBounds = true
+        instructionContainer.layer.borderWidth = 2
+        instructionContainer.layer.borderColor = secondaryColor.withAlphaComponent(0.3).cgColor
+        instructionContainer.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(instructionContainer)
+        
+        instructionLabel = UILabel()
+        let instructionText = "Cari barang yang janggal ditemukan di \(themeDisplayName)."
+        let attributedString = NSMutableAttributedString(string: instructionText)
+        
+        // Make the theme name bold
+        let range = (instructionText as NSString).range(of: themeDisplayName)
+        attributedString.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: range)
+        
+        // Set regular font for the rest
+        let fullRange = NSRange(location: 0, length: instructionText.count)
+        attributedString.addAttribute(.font, value: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18), range: fullRange)
+        attributedString.addAttribute(.foregroundColor, value: textColor, range: fullRange)
+        
+        // Re-apply bold to theme name (this overwrites the regular font for that range)
+        attributedString.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: range)
+        
+        instructionLabel.attributedText = attributedString
+        instructionLabel.backgroundColor = UIColor.clear
+        instructionLabel.textAlignment = .center
+        instructionLabel.numberOfLines = 0
+        instructionLabel.translatesAutoresizingMaskIntoConstraints = false
+        instructionContainer.addSubview(instructionLabel)
+        
         // Start Button
         startButton = UIButton(type: .system)
         startButton.setTitle("Mulai Latihan", for: .normal)
@@ -171,6 +206,16 @@ class KitchenViewController: UIViewController, ARSCNViewDelegate, UIGestureRecog
             timerLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             timerLabel.widthAnchor.constraint(equalToConstant: 100),
             timerLabel.heightAnchor.constraint(equalToConstant: 40),
+            
+            instructionContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 70),
+            instructionContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            instructionContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            instructionContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 50),
+            
+            instructionLabel.topAnchor.constraint(equalTo: instructionContainer.topAnchor, constant: 7),
+            instructionLabel.leadingAnchor.constraint(equalTo: instructionContainer.leadingAnchor, constant: 7),
+            instructionLabel.trailingAnchor.constraint(equalTo: instructionContainer.trailingAnchor, constant: -7),
+            instructionLabel.bottomAnchor.constraint(equalTo: instructionContainer.bottomAnchor, constant: -7),
             
             startButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
             startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
