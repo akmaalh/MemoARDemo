@@ -65,7 +65,7 @@ struct HistoryView: View {
                                         .font(.system(size: 20, weight: .bold))
                                         .foregroundColor(primaryTextColor)
                                     Spacer()
-                                    Text("Skor: \(record.score)") // Indonesian text
+                                    Text("Poin: \(record.score)") // Indonesian text
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(scoreColor)
                                 }
