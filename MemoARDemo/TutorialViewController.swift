@@ -818,10 +818,11 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                 if isGameActive {
                     score += 1
                     updateScoreLabel()
-                    showFloatingText(at: location, text: "+1", color: .green)
+                    showCorrectBadge(at: location)
+
                     placeGameObjects()
                 } else {
-                    showFloatingText(at: location, text: "Benar!", color: .green)
+                    showCorrectBadge(at: location)
                     // Clear all objects after successful identification
                     tutorialObjects.forEach { $0.removeFromParentNode() }
                     tutorialObjects.removeAll()
@@ -925,6 +926,25 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         
         DispatchQueue.main.async {
             self.present(alertController, animated: true, completion: nil)
+        }
+    }
+
+    private func showCorrectBadge(at position: CGPoint) {
+        guard let badgeImage = UIImage(named: "correct-badge") else {
+            print("Error: Could not load correct-badge image.")
+            // Fallback to old text behavior or do nothing
+            return
+        }
+        let imageView = UIImageView(image: badgeImage)
+        imageView.frame.size = CGSize(width: 153.5, height: 50) // Adjust size as needed
+        imageView.center = position
+        view.addSubview(imageView)
+        
+        UIView.animate(withDuration: 0.8, animations: {
+            imageView.alpha = 0
+            imageView.center.y -= 50
+        }) { _ in
+            imageView.removeFromSuperview()
         }
     }
 }
