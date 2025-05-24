@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct MemoARDemoApp: App {
+    
     @StateObject private var dataManager = GameDataManager()
     @State private var showUserForm = false
     @State private var showTutorial = false
@@ -49,6 +50,7 @@ struct MemoARDemoApp: App {
                     }
                 }
             }
+            .environment(\.locale, Locale(identifier: "id"))
         }
     }
 }
