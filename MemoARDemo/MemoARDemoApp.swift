@@ -9,6 +9,12 @@ import SwiftUI
 
 @main
 struct MemoARDemoApp: App {
+
+    init() {
+        // Force Indonesian language
+        UserDefaults.standard.set(["id"], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize() // Ensure it's saved immediately
+    }
     
     @StateObject private var dataManager = GameDataManager()
     @State private var showUserForm = false
@@ -42,6 +48,7 @@ struct MemoARDemoApp: App {
                     .transition(.opacity)
                 }
             }
+            .environment(\.locale, Locale(identifier: "id"))
             .onAppear {
                 // Check if user exists
                 if dataManager.getCurrentUser() == nil {
@@ -50,7 +57,6 @@ struct MemoARDemoApp: App {
                     }
                 }
             }
-            .environment(\.locale, Locale(identifier: "id"))
         }
     }
 }

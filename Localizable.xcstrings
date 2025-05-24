@@ -6,6 +6,12 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kembali"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
             "state" : "translated",
             "value" : "Kembali"
           }

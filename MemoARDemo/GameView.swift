@@ -88,6 +88,7 @@ struct GameView: View {
                 }
             }
         }
+        .environment(\.locale, Locale(identifier: "id"))
     }
     
     private func saveGameRecord(theme: GameTheme) {
@@ -177,6 +178,7 @@ struct ThemeSelectionView: View {
             Spacer()
         }
         .padding(.horizontal, 12)
+        .environment(\.locale, Locale(identifier: "id"))
     }
 }
 
