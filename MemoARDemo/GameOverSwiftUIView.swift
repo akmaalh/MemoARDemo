@@ -58,7 +58,7 @@ struct GameOverSwiftUIView: View {
     
     private func motivationalMessage() -> String {
         if isNewHighScore {
-            return "🎉 Selamat \(userName)! Kamu berhasil memecahkan poin tertinggi!!"
+            return "Selamat \(userName)! Kamu berhasil meraih poin tertinggi!"
         } else {
             return "Kerja bagus, \(userName)!\nPoinmu kali ini:\n"
         }
@@ -88,7 +88,7 @@ struct GameOverSwiftUIView: View {
                     VStack(spacing: 15) {
                         if isNewHighScore {
                             Image(systemName: "trophy.fill")
-                                .font(.system(size: 50))
+                                .font(.system(size: 36))
                                 .foregroundColor(highlightColor)
                                 .scaleEffect(animateConfettiContent ? 1.0 : 0.0) // Animate trophy appearance
                                 .animation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.2), value: animateConfettiContent)
@@ -99,6 +99,7 @@ struct GameOverSwiftUIView: View {
                             .foregroundColor(textColor)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
+                            .frame(maxWidth: .infinity, alignment: .center)
                             .opacity(animateConfettiContent ? 1 : 0) // Fade in text
                             .animation(.easeIn(duration: 0.5).delay(0.1), value: animateConfettiContent)
 
@@ -261,7 +262,6 @@ struct GameOverButtonModifier: ViewModifier {
             .padding(.vertical, 12)
             .padding(.horizontal, 10)
             .frame(maxWidth: flexibleWidth ? .infinity : nil)
-            .frame(height: 55)
             .background(backgroundColor)
             .foregroundColor(textColor)
             .cornerRadius(12)
