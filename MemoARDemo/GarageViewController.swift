@@ -617,44 +617,29 @@ class GarageViewController: UIViewController, ARSCNViewDelegate, UIGestureRecogn
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
         let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
         
-        // Style the OK button
-        okAction.setValue(secondaryColor, forKey: "titleTextColor")
-        alertController.addAction(okAction)
-        
-        // Configure alert appearance
+        // Configure alert appearance with custom font sizes
         let attributedTitle = NSAttributedString(
-            string: title,
+            string: title + "\n",
             attributes: [
-                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20),
-                .foregroundColor: textColor
+                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 18),
+                .foregroundColor: UIColor.red
             ]
         )
+        
         let attributedMessage = NSAttributedString(
-            string: message,
-            attributes: [
-                .font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18),
-                .foregroundColor: textColor
-            ]
+            string: message + "\n",
+            attributes: [.font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)]
         )
         
         alertController.setValue(attributedTitle, forKey: "attributedTitle")
         alertController.setValue(attributedMessage, forKey: "attributedMessage")
-        
-        // Style the alert view
-        if let alertView = alertController.view {
-            alertView.backgroundColor = mainColor
-            alertView.layer.cornerRadius = 15
-            alertView.layer.masksToBounds = true
-        }
-        
-        // Set modal presentation style to prevent background dimming
-        alertController.modalPresentationStyle = .overFullScreen
+        alertController.addAction(okAction)
         
         DispatchQueue.main.async {
             self.present(alertController, animated: true, completion: nil)
         }
     }
-    
+
     private func triggerHapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.prepare()
