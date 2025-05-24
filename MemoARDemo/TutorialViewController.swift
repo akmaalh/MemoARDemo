@@ -22,6 +22,9 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     /// Collection of tutorial object nodes
     private var tutorialObjects: [SCNNode] = []
     
+    /// Collection of clicked objects in step 5
+    private var clickedObjects: Set<String> = []
+    
     /// Collection of trial game object nodes
     private var trialNodes: [SCNNode] = []
     
@@ -102,6 +105,9 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     /// Normal items specific to the kitchen theme
     private let normalItems = ["blender", "stove", "plate", "teapot", "redbull"]
     
+    /// Fixed tutorial items in specific order
+    private let tutorialItems = ["blender", "stove", "plate", "teapot"]
+    
     /// Unusual items that can appear in the game
     private let unusualItems = ["helmet", "laptop", "camera", "tire", "basketball",  
                                "wrench", "pipewrench", "drill", "toothbrush", "sink", "bucket", 
@@ -140,14 +146,14 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         "Dalam sesi latihan ini, kamu akan menemukan objek yang tidak biasa di sekitar kamu.",
         "Pertama-tama, kamu akan memilih tema dari objek-objek yang muncul.",
         "Untuk tutorial ini, mari gunakan tema Dapur terlebih dahulu",
-        "Lihat sekeliling kamu! Kamu akan melihat 4 objek yang umum di dapur. Coba klik salah satu untuk melihat apa yang akan terjadi.",
-        "Sekarang, objek yang janggal muncul. Coba cari dan klik objek itu!",
+        "Lihat sekeliling! Kamu akan melihat 4 objek yang umum di dapur.",
+        "Klik semua objek tersebut untuk lanjut.",
+        "Sekarang, muncul objek yang tidak sesuai tema dapur. Coba cari dan klik objek itu!",
         "Bagus! Kamu berhasil memilih objek yang tepat!",
-        "Dalam latihan, kamu perlu mencari objek yang janggal sebanyak mungkin dalam waktu 60 detik.",
+        "Dalam latihan, kamu perlu mencari objek yang tidak sesuai tema sebanyak mungkin dalam waktu 60 detik.",
         "Mari kita coba sesi latihan singkat selama 30 detik. Siap?",
-        "Enjoy playing MemoAR!",
         "Sesi latihan selesai! Kamu berhasil menemukan %d objek yang tidak biasa!",
-        "Sekarang kamu siap untuk bermain! Kembali ke halaman utama untuk memulai permainan."
+        "Sekarang kamu siap untuk bermain! Kembali ke halaman utama untuk mulai latihan."
     ]
     
     // MARK: - Lifecycle Methods
@@ -439,25 +445,33 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         
         switch currentStep {
         case 4:
-            generateNormalObjects()
-            continueButton.isEnabled = false
+            continueButton.isEnabled = true
             startTrialButton.isHidden = true
             continueButton.isHidden = false
             containerView.isHidden = false
+            generateNormalObjects()
+
         case 5:
+            // Reset clicked objects tracking
+            continueButton.isEnabled = false
+            startTrialButton.isHidden = true
+            continueButton.isHidden = true
+            containerView.isHidden = false
+        case 6:
+            generateNormalObjects()
             generateUnusualObject()
             continueButton.isEnabled = false
             startTrialButton.isHidden = true
             continueButton.isHidden = true  // Hide continue button until correct object is tapped
             containerView.isHidden = false
-        case 8:
+        case 9:
             // Show start trial button instead of continue button
             continueButton.isHidden = true
             startTrialButton.isHidden = false
             containerView.isHidden = false
-        case 9:
-            startTrialGame()
         case 10:
+            startTrialGame()
+        case 11:
             // Show final message with continue button
             continueButton.setTitle("Halaman Utama", for: .normal)
             continueButton.isHidden = false
@@ -605,6 +619,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         // Clear existing objects
         tutorialObjects.forEach { $0.removeFromParentNode() }
         tutorialObjects.removeAll()
+        clickedObjects.removeAll()  // Reset clicked objects tracking
         
         // Store initial camera position when objects are generated
         if let cameraTransform = sceneView.session.currentFrame?.camera.transform {
@@ -623,12 +638,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         // Select a random position set
         selectRandomPositionSet()
         
-        // Place objects at first 4 positions
+        // Place objects at first 4 positions in fixed order
         for i in 0..<4 {
-            guard let randomType = normalItems.randomElement() else { return }
-            guard let template = loadObjectTemplate(named: randomType)?.clone() else { return }
+            let objectType = tutorialItems[i]
+            guard let template = loadObjectTemplate(named: objectType)?.clone() else { return }
             
-            template.name = randomType
+            template.name = objectType
             template.setValue("Normal", forKey: "category")
             template.position = currentPositionSet[i]
             
@@ -819,7 +834,6 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                     score += 1
                     updateScoreLabel()
                     showCorrectBadge(at: location)
-
                     placeGameObjects()
                 } else {
                     showCorrectBadge(at: location)
@@ -834,19 +848,48 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                     showCurrentStep()
                 }
             } else {
-                if currentStep == 4 {
+                if currentStep == 5 {
                     if let name = objectName {
-                        foundSoundPlayer?.currentTime = 0
-                        foundSoundPlayer?.play()
-                        let indonesianName = getIndonesianName(for: name)
-                        let message = "Benar! Ini adalah \(indonesianName), objek normal di dapur."
-                        let attributedMessage = NSMutableAttributedString(string: message)
-                        let boldRange = (message as NSString).range(of: "Benar")
-                        attributedMessage.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: boldRange)
-                        messageLabel.attributedText = attributedMessage
-                        continueButton.isEnabled = true
+                        // Check if this object hasn't been clicked yet
+                        if !clickedObjects.contains(name) {
+                            foundSoundPlayer?.currentTime = 0
+                            foundSoundPlayer?.play()
+                            
+                            // Add to clicked objects
+                            clickedObjects.insert(name)
+                            
+                            // Find and remove the clicked object
+                            if let index = tutorialObjects.firstIndex(where: { $0.name == name }) {
+                                let node = tutorialObjects[index]
+                                node.removeFromParentNode()
+                                tutorialObjects.remove(at: index)
+                            }
+                            
+                            
+                            // Check if all objects have been clicked
+                            if tutorialObjects.isEmpty {
+                                let indonesianName = getIndonesianName(for: name)
+                                let message = "Benar! Ini adalah \(indonesianName), objek normal di dapur. Kamu berhasil klik semua objek!"
+                                let attributedMessage = NSMutableAttributedString(string: message)
+                                let boldRange = (message as NSString).range(of: "Benar")
+                                attributedMessage.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: boldRange)
+                                messageLabel.attributedText = attributedMessage
+
+                                continueButton.isEnabled = true
+                                continueButton.isHidden = false
+                            } else {
+                                let indonesianName = getIndonesianName(for: name)
+                                let message = "Benar! Ini adalah \(indonesianName), objek normal di dapur. Klik objek lainnya"
+                                let attributedMessage = NSMutableAttributedString(string: message)
+                                let boldRange = (message as NSString).range(of: "Benar")
+                                attributedMessage.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: boldRange)
+                                messageLabel.attributedText = attributedMessage
+
+                            }
+                        }
                     }
-                } else if isGameActive {
+                }else if currentStep == 4 {
+                }else if isGameActive {
                     wrongSoundPlayer?.currentTime = 0
                     wrongSoundPlayer?.play()
                     if let name = objectName {
@@ -916,7 +959,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
         )
         
         let attributedMessage = NSAttributedString(
-            string: message + "\n",
+            string: message,
             attributes: [.font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)]
         )
         
@@ -928,7 +971,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
             self.present(alertController, animated: true, completion: nil)
         }
     }
-
+    
     private func showCorrectBadge(at position: CGPoint) {
         guard let badgeImage = UIImage(named: "correct-badge") else {
             print("Error: Could not load correct-badge image.")
