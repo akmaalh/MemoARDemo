@@ -42,60 +42,67 @@ struct HistoryView: View {
         // For now, assuming it's pushed onto an existing NavigationView.
         ZStack {
             listBackgroundColor.edgesIgnoringSafeArea(.all)
-            List {
-                if dataManager.gameHistory.isEmpty {
-                    Text("Belum ada riwayat permainan") // Indonesian text
-                        .font(.system(size: 20))
-                        .foregroundColor(secondaryTextColor)
-                        .italic()
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .listRowBackground(listBackgroundColor)
-                } else {
-                    ForEach(dataManager.gameHistory.sorted(by: { $0.date > $1.date })) { record in
-                        VStack(alignment: .leading, spacing: 6) { // Slightly increased spacing
-                            HStack {
-                                Text(record.userName)
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(primaryTextColor)
-                                Spacer()
-                                Text("Skor: \(record.score)") // Indonesian text
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(scoreColor)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Riwayat Permainan") // Indonesian title
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(primaryTextColor)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                List {
+                    if dataManager.gameHistory.isEmpty {
+                        Text("Belum ada riwayat permainan") // Indonesian text
+                            .font(.system(size: 20))
+                            .foregroundColor(secondaryTextColor)
+                            .italic()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                            .listRowBackground(listBackgroundColor)
+                    } else {
+                        ForEach(dataManager.gameHistory.sorted(by: { $0.date > $1.date })) { record in
+                            VStack(alignment: .leading, spacing: 6) { // Slightly increased spacing
+                                HStack {
+                                    Text(record.userName)
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(primaryTextColor)
+                                    Spacer()
+                                    Text("Skor: \(record.score)") // Indonesian text
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(scoreColor)
+                                }
+                                
+                                HStack {
+                                    Text(getIndonesianThemeName(record.theme))
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(themeColor)
+                                    Spacer()
+                                    Text(formatDate(record.date))
+                                        .font(.system(size: 18))
+                                        .foregroundColor(secondaryTextColor)
+                                }
                             }
-                            
-                            HStack {
-                                Text(getIndonesianThemeName(record.theme))
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(themeColor)
-                                Spacer()
-                                Text(formatDate(record.date))
-                                    .font(.system(size: 18))
-                                    .foregroundColor(secondaryTextColor)
-                            }
+                            .padding(.vertical, 8) // Increased padding
+                            .listRowBackground(listBackgroundColor)
                         }
-                        .padding(.vertical, 8) // Increased padding
-                        .listRowBackground(listBackgroundColor)
                     }
                 }
-            }
-            .listStyle(PlainListStyle()) // Use PlainListStyle for full background color effect
-            .background(listBackgroundColor) // Ensure background color for the List itself
-            .navigationTitle("Riwayat Permainan") // Indonesian text
-            .toolbar { // Preferred way to add bar items in newer SwiftUI
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        dataManager.clearHistory()
-                    } label: {
-                        Text("Hapus") // Indonesian text
-                            .font(.system(size: 20, weight: .bold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .foregroundColor(clearButtonTextColor)
-                            .background(clearButtonColor)
-                            .cornerRadius(8)
-                    }
-                    .disabled(dataManager.gameHistory.isEmpty)
+                .listStyle(PlainListStyle()) // Use PlainListStyle for full background color effect
+                .background(listBackgroundColor) // Ensure background color for the List itself
+                // .navigationTitle("Riwayat Permainan"). // Indonesian text
+                .toolbar { // Preferred way to add bar items in newer SwiftUI
+                    // ToolbarItem(placement: .navigationBarTrailing) {
+                    //     Button {
+                    //         dataManager.clearHistory()
+                    //     } label: {
+                    //         Text("Hapus") // Indonesian text
+                    //             .font(.system(size: 20, weight: .bold))
+                    //             .padding(.horizontal, 8)
+                    //             .padding(.vertical, 4)
+                    //             .foregroundColor(clearButtonTextColor)
+                    //             .background(clearButtonColor)
+                    //             .cornerRadius(8)
+                    //     }
+                    //     .disabled(dataManager.gameHistory.isEmpty)
+                    // }
                 }
             }
         }
