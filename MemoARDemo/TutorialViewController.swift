@@ -302,7 +302,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     private func setupScoreLabel() {
         scoreLabel = UILabel()
         scoreLabel.translatesAutoresizingMaskIntoConstraints = false
-        scoreLabel.text = "Score: 0"
+        scoreLabel.text = "Poin: 0"
         scoreLabel.textColor = textColor
         scoreLabel.backgroundColor = mainColor
         scoreLabel.textAlignment = .center
@@ -324,7 +324,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     private func setupTimerLabel() {
         timerLabel = UILabel()
         timerLabel.translatesAutoresizingMaskIntoConstraints = false
-        timerLabel.text = "Time: 30s"
+        timerLabel.text = "Waktu: 30s"
         timerLabel.textColor = textColor
         timerLabel.backgroundColor = mainColor
         timerLabel.textAlignment = .center
@@ -553,12 +553,12 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     
     /// Updates the timer label
     private func updateTimerLabel() {
-        timerLabel.text = "Time: \(gameTimeRemaining)s"
+        timerLabel.text = "Waktu: \(gameTimeRemaining)s"
     }
     
     /// Updates the score label
     private func updateScoreLabel() {
-        scoreLabel.text = "Score: \(score)"
+        scoreLabel.text = "Poin: \(score)"
     }
     
     // MARK: - Object Management

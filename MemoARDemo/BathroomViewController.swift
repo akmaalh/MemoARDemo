@@ -133,7 +133,7 @@ class BathroomViewController: UIViewController, ARSCNViewDelegate, UIGestureReco
     private func setupUI() {
         // Score Label
         scoreLabel = UILabel()
-        scoreLabel.text = "Score: 0"
+        scoreLabel.text = "Poin: 0"
         scoreLabel.textColor = textColor
         scoreLabel.backgroundColor = mainColor
         scoreLabel.textAlignment = .center
@@ -145,7 +145,7 @@ class BathroomViewController: UIViewController, ARSCNViewDelegate, UIGestureReco
         
         // Timer Label
         timerLabel = UILabel()
-        timerLabel.text = "Time: 60s"
+        timerLabel.text = "Waktu: 60s"
         timerLabel.textColor = textColor
         timerLabel.backgroundColor = mainColor
         timerLabel.textAlignment = .center
@@ -316,11 +316,11 @@ class BathroomViewController: UIViewController, ARSCNViewDelegate, UIGestureReco
     }
     
     private func updateTimerLabel() {
-        timerLabel.text = "Time: \(gameTimeRemaining)s"
+        timerLabel.text = "Waktu: \(gameTimeRemaining)s"
     }
     
     private func updateScoreLabel() {
-        scoreLabel.text = "Score: \(score)"
+        scoreLabel.text = "Poin: \(score)"
         scoreUpdateHandler?(score)
     }
     
