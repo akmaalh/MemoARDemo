@@ -1,0 +1,17 @@
+{
+  "sourceLanguage" : "id",
+  "strings" : {
+    "Back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kembali"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
