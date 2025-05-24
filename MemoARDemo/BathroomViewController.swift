@@ -567,74 +567,33 @@ class BathroomViewController: UIViewController, ARSCNViewDelegate, UIGestureReco
         }
     }
     
-    // MARK: - Feedback Helpers
     private func showAlert(title: String, message: String) {
-        // Create custom alert view
-        let alertView = UIView()
-        alertView.backgroundColor = mainColor
-        alertView.layer.cornerRadius = 15
-        alertView.translatesAutoresizingMaskIntoConstraints = false
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
         
-        // Create title label
-        let titleLabel = UILabel()
-        titleLabel.text = title
-        titleLabel.textColor = textColor
-        titleLabel.font = UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 20)
-        titleLabel.textAlignment = .center
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        // Configure alert appearance with custom font sizes
+        let attributedTitle = NSAttributedString(
+            string: title + "\n",
+            attributes: [
+                .font: UIFont(name: "Verdana-Bold", size: 20) ?? UIFont.boldSystemFont(ofSize: 18),
+                .foregroundColor: UIColor.red
+            ]
+        )
         
-        // Create message label
-        let messageLabel = UILabel()
-        messageLabel.text = message
-        messageLabel.textColor = textColor
-        messageLabel.font = UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)
-        messageLabel.textAlignment = .center
-        messageLabel.numberOfLines = 0
-        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        let attributedMessage = NSAttributedString(
+            string: message + "\n",
+            attributes: [.font: UIFont(name: "Verdana", size: 18) ?? UIFont.systemFont(ofSize: 18)]
+        )
         
-        // Create OK button
-        let okButton = UIButton(type: .system)
-        okButton.setTitle("OK", for: .normal)
-        okButton.setTitleColor(secondaryColor, for: .normal)
-        okButton.titleLabel?.font = UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18)
-        okButton.translatesAutoresizingMaskIntoConstraints = false
-        okButton.addTarget(self, action: #selector(dismissAlert(_:)), for: .touchUpInside)
+        alertController.setValue(attributedTitle, forKey: "attributedTitle")
+        alertController.setValue(attributedMessage, forKey: "attributedMessage")
+        alertController.addAction(okAction)
         
-        // Add subviews
-        alertView.addSubview(titleLabel)
-        alertView.addSubview(messageLabel)
-        alertView.addSubview(okButton)
-        view.addSubview(alertView)
-        
-        // Set up constraints
-        NSLayoutConstraint.activate([
-            alertView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            alertView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            alertView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8),
-            
-            titleLabel.topAnchor.constraint(equalTo: alertView.topAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: alertView.leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(equalTo: alertView.trailingAnchor, constant: -20),
-            
-            messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            messageLabel.leadingAnchor.constraint(equalTo: alertView.leadingAnchor, constant: 20),
-            messageLabel.trailingAnchor.constraint(equalTo: alertView.trailingAnchor, constant: -20),
-            
-            okButton.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: 20),
-            okButton.leadingAnchor.constraint(equalTo: alertView.leadingAnchor),
-            okButton.trailingAnchor.constraint(equalTo: alertView.trailingAnchor),
-            okButton.bottomAnchor.constraint(equalTo: alertView.bottomAnchor),
-            okButton.heightAnchor.constraint(equalToConstant: 44) // Standard touch target height
-        ])
-        
-        // Add animation
-        alertView.alpha = 0
-        alertView.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
-        UIView.animate(withDuration: 0.3) {
-            alertView.alpha = 1
-            alertView.transform = .identity
+        DispatchQueue.main.async {
+            self.present(alertController, animated: true, completion: nil)
         }
     }
+
     
     @objc private func dismissAlert(_ sender: UIButton) {
         if let alertView = sender.superview {

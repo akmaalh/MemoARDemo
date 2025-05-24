@@ -103,11 +103,12 @@ struct HistoryView: View {
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "id_ID") // Set Indonesian locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-    
+        
     private func getIndonesianThemeName(_ theme: String) -> String {
         switch theme.lowercased() {
         case "kitchen":

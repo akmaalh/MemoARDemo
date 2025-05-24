@@ -34,7 +34,7 @@ struct HomeScreen: View {
                         .font(.custom("verdana-bold", size: 45))
                         .fontWeight(.bold)
                         .foregroundColor(textColor)
-
+ 
                     // Greeting
                     Text("Halo, \(userName)!")
                         .font(.custom("verdana-bold", size: 35))
