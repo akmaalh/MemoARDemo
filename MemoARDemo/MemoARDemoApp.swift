@@ -9,9 +9,6 @@ import SwiftUI
 
 @main
 struct MemoARDemoApp: App {
-    init() {
-        // Removed force AppleLanguages hack. Locale will be set via .environment modifier.
-    }
     
     @StateObject private var dataManager = GameDataManager()
     @State private var showUserForm = false
