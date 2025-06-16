@@ -143,17 +143,17 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
     /// Tutorial step messages
     private let tutorialSteps = [
         "Selamat datang di MemoAR! Ayo belajar cara berlatih.",
-        "Dalam sesi latihan ini, kamu akan menemukan objek yang tidak biasa di sekitar kamu.",
-        "Pertama-tama, kamu akan memilih tema dari objek-objek yang muncul.",
+        "Dalam sesi latihan ini, Anda akan menemukan objek yang tidak biasa di sekitar Anda.",
+        "Pertama-tama, Anda akan memilih tema dari objek-objek yang muncul.",
         "Untuk tutorial ini, mari gunakan tema Dapur terlebih dahulu",
-        "Lihat sekeliling! Kamu akan melihat 4 objek yang umum di dapur.",
+        "Lihat sekeliling! Anda akan melihat 4 objek yang umum di dapur.",
         "Klik semua objek tersebut untuk lanjut.",
         "Sekarang, muncul objek yang tidak sesuai tema dapur. Coba cari dan klik objek itu!",
-        "Bagus! Kamu berhasil memilih objek yang tepat!",
-        "Dalam latihan, kamu perlu mencari objek yang tidak sesuai tema sebanyak mungkin dalam waktu 60 detik.",
+        "Bagus! Anda berhasil memilih objek yang tepat!",
+        "Dalam latihan, Anda perlu mencari objek yang tidak sesuai tema sebanyak mungkin dalam waktu 60 detik.",
         "Mari kita coba sesi latihan singkat selama 30 detik. Siap?",
-        "Sesi latihan selesai! Kamu berhasil menemukan %d objek yang tidak biasa!",
-        "Sekarang kamu siap untuk bermain! Kembali ke halaman utama untuk mulai latihan."
+        "Sesi latihan selesai! Anda berhasil menemukan %d objek yang tidak biasa!",
+        "Sekarang Anda siap untuk bermain! Kembali ke halaman utama untuk mulai latihan."
     ]
     
     // MARK: - Lifecycle Methods
@@ -869,7 +869,7 @@ class TutorialViewController: UIViewController, ARSCNViewDelegate {
                             // Check if all objects have been clicked
                             if tutorialObjects.isEmpty {
                                 let indonesianName = getIndonesianName(for: name)
-                                let message = "Benar! Ini adalah \(indonesianName), objek normal di dapur. Kamu berhasil klik semua objek!"
+                                let message = "Benar! Ini adalah \(indonesianName), objek normal di dapur. Anda berhasil klik semua objek!"
                                 let attributedMessage = NSMutableAttributedString(string: message)
                                 let boldRange = (message as NSString).range(of: "Benar")
                                 attributedMessage.addAttribute(.font, value: UIFont(name: "Verdana-Bold", size: 18) ?? UIFont.boldSystemFont(ofSize: 18), range: boldRange)

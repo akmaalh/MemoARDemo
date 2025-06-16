@@ -51,7 +51,7 @@ struct UserFormView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
-                Text("Masukkan data diri kamu")
+                Text("Masukkan data diri Anda")
                     .font(.custom("verdana", size: 20))
                     .foregroundColor(textColor)
                     .padding(.bottom, 20)

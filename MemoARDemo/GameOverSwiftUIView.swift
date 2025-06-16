@@ -58,7 +58,7 @@ struct GameOverSwiftUIView: View {
     
     private func motivationalMessage() -> String {
         if isNewHighScore {
-            return "Selamat \(userName)! Kamu berhasil meraih poin tertinggi!"
+            return "Selamat \(userName)! Anda berhasil meraih poin tertinggi!"
         } else {
             return "Kerja bagus, \(userName)!\nPoinmu kali ini:\n"
         }
@@ -116,7 +116,7 @@ struct GameOverSwiftUIView: View {
                                 .foregroundColor(textColor)
                         }
                         
-                        Text("Terus bermain untuk tingkatkan poin kamu!")
+                        Text("Terus bermain untuk tingkatkan poin Anda!")
                             .font(.custom("verdana", size: 20))
                             .foregroundColor(textColor)
                             .multilineTextAlignment(.center)
